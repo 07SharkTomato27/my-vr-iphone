@@ -3,54 +3,91 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Phone VR Web UI (GH-Pages)</title>
+<title>Phone VR</title>
 <style>
   :root {
     --ui-bg: rgba(20,24,28,.55);
-    --ui-blur: blur(8px);
+    --ui-blur: blur(10px);
     --ui-border: rgba(255,255,255,.14);
     --accent: #66ccff; /* 水色 */
   }
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif}
-  /* 背景カメラ */
-  #camWrap{position:fixed;inset:0;overflow:hidden}
-  #cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)} /* ミラー表示 */
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 
-  /* UIオーバーレイ */
+  /* === Camera background (landscape) === */
+  #camWrap{position:fixed;inset:0;overflow:hidden;background:#000}
+  #cam{
+    position:absolute;left:50%;top:50%;
+    /* 90度回転で横向き。カメラが右側（Landscape-Right）をデフォルト */
+    transform:translate(-50%,-50%) rotate(90deg);
+    transform-origin:center center;
+    width:100vh; height:100vw; object-fit:cover;
+    /* ※鏡反転しない */
+  }
+  /* 左にカメラ（Landscape-Left）へ切替用 */
+  .leftCam #cam{ transform:translate(-50%,-50%) rotate(-90deg); }
+
+  /* === UI overlay === */
   #ui{position:fixed;inset:0;pointer-events:none}
-  .bar{position:fixed;top:0;left:0;right:0;display:flex;gap:.5rem;padding: .6rem .8rem;justify-content:flex-end;pointer-events:auto}
-  .btn{background:var(--ui-bg);-webkit-backdrop-filter:var(--ui-blur);backdrop-filter:var(--ui-blur);border:1px solid var(--ui-border);
-       color:#fff;border-radius:14px;padding:.5rem .8rem;font-size:14px;cursor:pointer}
+  .bar{position:fixed;top:0;left:0;right:0;display:flex;gap:.5rem;padding:.6rem .8rem;justify-content:flex-end;pointer-events:auto}
+  .btn{
+    background:var(--ui-bg);-webkit-backdrop-filter:var(--ui-blur);backdrop-filter:var(--ui-blur);
+    border:1px solid var(--ui-border);color:#fff;border-radius:14px;padding:.5rem .8rem;font-size:14px;cursor:pointer
+  }
   .btn:active{transform:scale(.98)}
-  /* ランチャー */
+
+  /* Dock */
   #dock{position:fixed;left:50%;bottom:2.2rem;transform:translateX(-50%);display:flex;gap:.8rem;pointer-events:auto}
-  .tile{width:72px;height:72px;border-radius:18px;border:1px solid var(--ui-border);
-        background:var(--ui-bg);-webkit-backdrop-filter:var(--ui-blur);backdrop-filter:var(--ui-blur);
-        display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-decoration:none}
+  .tile{
+    width:72px;height:72px;border-radius:18px;border:1px solid var(--ui-border);
+    background:var(--ui-bg);-webkit-backdrop-filter:var(--ui-blur);backdrop-filter:var(--ui-blur);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-decoration:none
+  }
   .tile span{font-size:11px;margin-top:.25rem;opacity:.9}
-  /* 時計（右下） */
+
+  /* Clock (right-bottom) */
   #clock{position:fixed;right:.8rem;bottom:.6rem;color:var(--accent);font-weight:600;
          font-size:18px;padding:.35rem .6rem;border-radius:12px;background:rgba(0,0,0,.35);
          border:1px solid var(--ui-border);pointer-events:none}
 
-  /* 設定モーダル */
+  /* Settings modal */
   #settings{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:auto}
-  #settings .panel{width:min(92vw,420px);background:var(--ui-bg);-webkit-backdrop-filter:var(--ui-blur);backdrop-filter:var(--ui-blur);
-                   border:1px solid var(--ui-border);border-radius:20px;padding:16px;color:#fff}
-  .row{display:flex;align-items:center;justify-content:space-between;padding:10px 6px}
+  #settings .panel{
+    width:min(92vw,460px);background:var(--ui-bg);-webkit-backdrop-filter:var(--ui-blur);backdrop-filter:var(--ui-blur);
+    border:1px solid var(--ui-border);border-radius:20px;padding:16px;color:#fff
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;padding:10px 6px;gap:12px}
   .toggle{inline-size:46px;block-size:26px;border-radius:999px;background:#444;position:relative;cursor:pointer;border:1px solid var(--ui-border)}
   .knob{position:absolute;top:2px;left:2px;inline-size:22px;block-size:22px;border-radius:50%;background:#fff;transition:transform .15s}
   .toggle.on{background:var(--accent)} .toggle.on .knob{transform:translateX(20px)}
+  .sel{appearance:none;background:#111;border:1px solid var(--ui-border);color:#fff;border-radius:10px;padding:.4rem .6rem}
 
-  /* カーソル */
+  /* Cursor */
   #cursor{position:fixed;left:50%;top:50%;width:20px;height:20px;border:2px solid var(--accent);
           border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:0;transition:opacity .12s}
   .cursor-dot{position:absolute;left:50%;top:50%;width:4px;height:4px;background:var(--accent);
               border-radius:50%;transform:translate(-50%,-50%)}
 
-  /* スタートオーバーレイ（iOSの権限対策用） */
+  /* Start overlay (iOS permission) */
   #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:20}
   #start button{font-size:18px}
+
+  /* === Floating 3D window space === */
+  #space{position:fixed;inset:0;pointer-events:none;perspective:1200px}
+  .win{
+    position:absolute;left:50%;top:40%;transform-style:preserve-3d;
+    transform:translate(-50%,-50%) rotateX(8deg) rotateY(-6deg) translateZ(80px);
+    width:min(90vw,900px);height:min(55vh,520px);border-radius:16px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 0 0 1px var(--ui-border);
+    display:none;pointer-events:auto
+  }
+  .winHdr{
+    position:absolute;left:0;right:0;top:0;height:42px;display:flex;align-items:center;gap:8px;
+    padding:0 10px;background:var(--ui-bg);-webkit-backdrop-filter:var(--ui-blur);backdrop-filter:var(--ui-blur);color:#fff
+  }
+  .winBody{position:absolute;left:0;right:0;top:42px;bottom:0;background:#000}
+  .iconBtn{border:1px solid var(--ui-border);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;padding:.3rem .55rem;cursor:pointer}
+  .win iframe{border:0;width:100%;height:100%}
+  #ytUrl{flex:1;min-width:120px;background:#0b0b0b;color:#fff;border:1px solid var(--ui-border);border-radius:10px;padding:.35rem .5rem}
 </style>
 </head>
 <body>
@@ -63,10 +100,10 @@
     </div>
 
     <div id="dock" aria-label="アプリランチャー">
-      <a class="tile" href="https://m.youtube.com" target="_blank" rel="noopener" data-app="youtube">
+      <button class="tile" id="openYT" type="button" title="YouTubeをウィンドウで">
         <svg width="30" height="20" viewBox="0 0 30 20" aria-hidden="true"><rect x="0" y="0" width="30" height="20" rx="5" ry="5" fill="none" stroke="white"/></svg>
         <span>YouTube</span>
-      </a>
+      </button>
       <a class="tile" href="https://discord.com/app" target="_blank" rel="noopener" data-app="discord">
         <svg width="28" height="20" viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="0" width="28" height="20" rx="5" ry="5" fill="none" stroke="white"/></svg>
         <span>Discord</span>
@@ -77,6 +114,7 @@
     <div id="cursor"><div class="cursor-dot"></div></div>
   </div>
 
+  <!-- Settings -->
   <div id="settings">
     <div class="panel">
       <h3 style="margin:4px 6px 10px">設定</h3>
@@ -88,17 +126,39 @@
         <div>カーソル感度</div>
         <input id="sens" type="range" min="0.5" max="3" step="0.1" value="1.2" style="width:160px">
       </div>
+      <div class="row">
+        <div>向き</div>
+        <select id="orient" class="sel">
+          <option value="right">カメラが右（標準）</option>
+          <option value="left">カメラが左</option>
+        </select>
+      </div>
       <div class="row" style="justify-content:flex-end"><button class="btn" id="closeSettings">閉じる</button></div>
     </div>
   </div>
 
+  <!-- Start permission -->
   <div id="start">
     <button class="btn" id="btnStart">カメラを開始</button>
+  </div>
+
+  <!-- 3D floating YouTube window -->
+  <div id="space">
+    <div class="win" id="ytWin">
+      <div class="winHdr">
+        <strong>YouTube</strong>
+        <input id="ytUrl" placeholder="YouTubeのURL（例 https://youtu.be/ID または ?v=ID）">
+        <button class="iconBtn" id="ytOpen">開く</button>
+        <button class="iconBtn" id="ytClose">閉じる</button>
+      </div>
+      <div class="winBody"><iframe id="ytFrame" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
+    </div>
   </div>
 
 <script>
 (() => {
   const $ = s => document.querySelector(s);
+  const body = document.body;
   const cam = $('#cam');
   const btnStart = $('#btnStart');
   const startOverlay = $('#start');
@@ -110,33 +170,34 @@
   const btnCloseSettings = $('#closeSettings');
   const cursor = $('#cursor');
   const sensInput = $('#sens');
+  const orientSel = $('#orient');
 
-  /* ---- iOS対策：ユーザー操作でgetUserMedia ---- */
+  /* --- iOS permission: getUserMedia after user gesture --- */
   btnStart.addEventListener('click', async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
       cam.srcObject = stream;
       startOverlay.style.display = 'none';
+      fitVideo(); // 取得後にサイズ調整
     } catch (e) {
       alert('カメラを取得できませんでした: ' + e);
     }
   }, { passive: true });
 
-  /* ---- 時計 ---- */
-  function fmtClock(d){
-    const h = d.getHours();
-    const m = d.getMinutes(); // 例: 23時:8分（ゼロ詰めしない）
-    return `${h}時:${m}分`;
+  /* --- Fit rotated video to cover screen --- */
+  function fitVideo(){
+    // 回転しているので width=vh, height=vw を基本に、object-fit:cover に任せる
+    cam.style.width  = window.innerHeight + 'px';
+    cam.style.height = window.innerWidth  + 'px';
   }
-  function tick(){
-    clockEl.textContent = fmtClock(new Date());
-  }
+  window.addEventListener('resize', fitVideo);
+
+  /* --- Clock --- */
+  function fmtClock(d){ return `${d.getHours()}時:${d.getMinutes()}分`; }
+  function tick(){ clockEl.textContent = fmtClock(new Date()); }
   setInterval(tick, 1000); tick();
 
-  // 表示設定（localStorage）
+  // Clock visible with localStorage
   const CLOCK_KEY = 'clockEnabled';
   function applyClockVisible(v){
     clockEl.style.display = v ? 'block':'none';
@@ -146,11 +207,11 @@
   applyClockVisible(localStorage.getItem(CLOCK_KEY)!=='0');
   tgClock.addEventListener('click', ()=>applyClockVisible(!tgClock.classList.contains('on')));
 
-  /* ---- 設定モーダル ---- */
+  /* --- Settings modal --- */
   btnSettings.addEventListener('click', ()=> settings.style.display='flex');
   btnCloseSettings.addEventListener('click', ()=> settings.style.display='none');
 
-  /* ---- フルスクリーン ---- */
+  /* --- Fullscreen --- */
   btnFull.addEventListener('click', async () => {
     try{
       if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
@@ -158,7 +219,18 @@
     }catch(e){}
   });
 
-  /* ---- コントローラー：Lスティックでカーソル、Aでクリック ---- */
+  /* --- Orientation (camera right/left) --- */
+  const ORIENT_KEY = 'camSide';
+  function applyOrient(side){ // 'right' or 'left'
+    body.classList.toggle('leftCam', side==='left');
+    localStorage.setItem(ORIENT_KEY, side);
+    fitVideo();
+  }
+  orientSel.value = localStorage.getItem(ORIENT_KEY) || 'right';
+  applyOrient(orientSel.value);
+  orientSel.addEventListener('change', ()=>applyOrient(orientSel.value));
+
+  /* --- Gamepad: L-stick cursor, A click --- */
   let cx = window.innerWidth/2, cy = window.innerHeight/2;
   let showUntil = 0;
   let prevBtnA = false;
@@ -168,65 +240,87 @@
     sensitivity = parseFloat(sensInput.value);
     localStorage.setItem('cursorSensitivity', sensitivity);
   });
-
   function clamp(v, min, max){ return v<min?min:v>max?max:v; }
-
   function gpLoop(){
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const gp = pads && pads[0];
     if (gp){
-      const ax = gp.axes[0] || 0; // 左右
-      const ay = gp.axes[1] || 0; // 上下
+      const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
       const dead = 0.15;
       const vx = Math.abs(ax) > dead ? ax : 0;
       const vy = Math.abs(ay) > dead ? ay : 0;
-
-      if (vx !== 0 || vy !== 0){
+      if (vx || vy){
         cx = clamp(cx + vx * 10 * sensitivity, 0, window.innerWidth);
         cy = clamp(cy + vy * 10 * sensitivity, 0, window.innerHeight);
-        showUntil = performance.now() + 800; // 動かしたら表示
+        showUntil = performance.now() + 800;
       }
-      // Aボタン（標準でindex 0）
       const btnA = !!(gp.buttons[0] && gp.buttons[0].pressed);
       if (btnA && !prevBtnA){
-        // カーソル位置の要素をクリック
         const el = document.elementFromPoint(cx, cy);
         if (el){
-          // a要素なら click() / それ以外はPointerEvent発火
-          if (el instanceof HTMLAnchorElement){
+          if (el instanceof HTMLAnchorElement || el instanceof HTMLButtonElement){
             el.click();
           } else {
             el.dispatchEvent(new MouseEvent('click', {bubbles:true,clientX:cx,clientY:cy}));
           }
         }
-        showUntil = performance.now() + 800; // 押したらしばらく表示
+        showUntil = performance.now() + 800;
       }
       prevBtnA = btnA;
     }
-    // カーソル描画
     cursor.style.left = cx+'px';
     cursor.style.top  = cy+'px';
     cursor.style.opacity = performance.now() < showUntil ? '1':'0';
-
     requestAnimationFrame(gpLoop);
   }
   gpLoop();
-
-  // 画面サイズ更新で範囲調整
   window.addEventListener('resize', ()=>{
     cx = clamp(cx, 0, window.innerWidth);
     cy = clamp(cy, 0, window.innerHeight);
   });
-
-  // タッチでカーソルを一時表示（確認用）
   document.addEventListener('pointermove', (e)=>{
     cx = e.clientX; cy = e.clientY; showUntil = performance.now()+600;
   });
 
-  // PWAっぽくフルスクリーン誘導（任意）
-  document.addEventListener('click', ()=>{
-    // iOS Chromeは自動FS不可のこと多いので手動ボタン優先
-  }, { passive:true });
+  /* --- YouTube floating window --- */
+  const ytWin = $('#ytWin');
+  const ytFrame = $('#ytFrame');
+  const ytUrl = $('#ytUrl');
+  const openYTBtn = $('#openYT');
+  const ytOpen = $('#ytOpen');
+  const ytClose = $('#ytClose');
+
+  openYTBtn.addEventListener('click', ()=>{
+    ytWin.style.display = 'block';
+    ytUrl.focus();
+  });
+
+  ytClose.addEventListener('click', ()=>{
+    ytWin.style.display = 'none';
+    ytFrame.src = '';
+  });
+
+  ytOpen.addEventListener('click', ()=>{
+    const url = ytUrl.value.trim();
+    const id = extractYouTubeId(url);
+    if (id){
+      ytFrame.src = `https://www.youtube.com/embed/${id}?rel=0&playsinline=1`;
+    } else {
+      alert('YouTubeのURLが読めませんでした。例:\nhttps://youtu.be/VIDEO_ID または https://www.youtube.com/watch?v=VIDEO_ID');
+    }
+  });
+
+  function extractYouTubeId(u){
+    try{
+      const m1 = u.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
+      if (m1) return m1[1];
+      const m2 = u.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+      if (m2) return m2[1];
+      const m3 = u.match(/embed\/([a-zA-Z0-9_-]{6,})/);
+      if (m3) return m3[1];
+      return null;
+    }catch(e){ return null; }
+  }
 })();
 </script>
 </body>
