@@ -1,107 +1,116 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MetaQuest風VR UI</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Phone VR - MetaQuest風</title>
 <style>
-html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
-#camWrap{position:fixed;inset:0;overflow:hidden;background:#000}
-#cam{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(90deg);width:100vh;height:100vw;object-fit:cover;backface-visibility:hidden;z-index:-1}
-.leftCam #cam{transform:translate(-50%,-50%) rotate(-90deg)}
-#clock{position:fixed;right:.9rem;bottom:.7rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:22px;padding:.4rem .7rem;border-radius:14px;border:1px solid rgba(120,200,255,.25);background:rgba(0,12,20,.35);text-shadow:0 0 10px #0ff;color:#0ff}
-#settings{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:auto}
-#settings .panel{width:min(92vw,520px);background:rgba(20,24,28,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:16px;color:#fff}
-.row{display:flex;align-items:center;justify-content:space-between;padding:10px 6px;gap:12px}
-.toggle{inline-size:52px;block-size:30px;border-radius:999px;background:#333;position:relative;cursor:pointer;border:1px solid rgba(255,255,255,.14)}
-.knob{position:absolute;top:3px;left:3px;inline-size:24px;block-size:24px;border-radius:50%;background:#fff;transition:transform .15s}
-.toggle.on{background:#69d2ff}.toggle.on .knob{transform:translateX(22px)}
-.btn{background:rgba(20,24,28,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);color:#fff;border-radius:14px;padding:.5rem .8rem;font-size:14px;cursor:pointer}
-#ui{position:fixed;inset:0;pointer-events:none}
-.bar{position:fixed;top:0;left:0;right:0;display:flex;gap:.5rem;padding:.6rem .8rem;justify-content:space-between;pointer-events:auto}
-.leftGroup{display:flex;gap:.5rem}
-#space{position:fixed;inset:0;perspective:1200px}
-.win{position:absolute;left:50%;top:50%;transform-style:preserve-3d;width:min(92vw,980px);height:min(62vh,560px);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.14);display:none;pointer-events:auto;background:#000;transition:transform .2s}
-.winHdr{position:absolute;left:0;right:0;top:0;height:46px;display:flex;align-items:center;gap:8px;padding:0 10px;background:rgba(20,24,28,.55);backdrop-filter:blur(12px);color:#fff;cursor:grab}
-.winHdr:active{cursor:grabbing}
-.winTitle{font-weight:700;margin-right:6px}
-.winBody{position:absolute;left:0;right:0;top:46px;bottom:0;background:#000;display:flex;align-items:center;justify-content:center}
-.iconBtn,.navBtn{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;padding:.35rem .6rem;cursor:pointer;white-space:nowrap}
-.urlbar{flex:1;min-width:120px;background:#0b0b0b;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:.4rem .55rem}
-.win iframe{border:0;width:100%;height:100%;background:#111}
-#fileInput{display:none}
+:root{--accent:#69d2ff;--ui-bg:rgba(10,12,14,.5);--glass:rgba(255,255,255,.04)}
+html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto}
+#videoWrap{position:fixed;inset:0;z-index:0;background:#000}
+video#cam{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;transform:none}
+#ui{position:fixed;inset:0;z-index:30;pointer-events:none}
+.topBar{position:fixed;top:10px;left:10px;display:flex;gap:8px;pointer-events:auto}
+.iconBtn{background:var(--ui-bg);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.06);padding:10px 12px;border-radius:12px;cursor:pointer}
+#clock{position:fixed;right:12px;bottom:12px;padding:.4rem .7rem;border-radius:12px;background:rgba(0,8,12,.5);border:1px solid rgba(100,200,255,.12);color:var(--accent);font-family:ui-monospace,Menlo,monospace;font-weight:700;pointer-events:auto;z-index:31}
+#settingsPanel{position:fixed;right:12px;top:60px;width:260px;padding:12px;border-radius:12px;background:rgba(10,12,14,.6);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.06);display:none;pointer-events:auto;z-index:32}
+.row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+.input{background:#071018;border:1px solid rgba(255,255,255,.06);color:#fff;padding:6px;border-radius:8px}
+#space{position:fixed;inset:0;perspective:1200px;z-index:20;pointer-events:none}
+.win{position:absolute;left:50%;top:50%;transform-style:preserve-3d;transform:translate(-50%,-50%) translateZ(0px) rotateX(6deg) rotateY(-6deg);width:360px;height:220px;border-radius:14px;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.04);box-shadow:0 40px 80px rgba(0,0,0,.6);pointer-events:auto}
+.winHeader{height:44px;display:flex;align-items:center;gap:8px;padding:6px;background:rgba(10,12,14,.6);backdrop-filter:blur(6px);cursor:grab}
+.winHeader:active{cursor:grabbing}
+.winTitle{font-weight:700}
+.winControls{margin-left:auto;display:flex;gap:6px}
+.btnSmall{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);padding:6px 8px;border-radius:8px;cursor:pointer;color:#fff}
+.winBody{position:absolute;left:0;right:0;top:44px;bottom:0;background:#0a0a0a;display:flex;align-items:stretch;justify-content:stretch}
+.winIframe{flex:1;border:0}
+.urlBar{flex:1;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,.04);background:#071018;color:#fff}
+.cursor{position:fixed;width:18px;height:18px;border-radius:50%;border:2px solid var(--accent);transform:translate(-50%,-50%);z-index:40;pointer-events:none;opacity:0;transition:opacity .12s}
+.hidden{display:none}
 </style>
 </head>
 <body>
-<div id="camWrap"><video id="cam" playsinline autoplay muted></video></div>
+<div id="videoWrap"><video id="cam" playsinline autoplay muted></video></div>
 <div id="ui">
-<div class="bar">
-<div class="leftGroup">
-<button class="btn" id="btnAdd">＋</button>
-<button class="btn" id="btnYouTubePWA">YouTube</button>
-<button class="btn" id="btnDiscordPWA">Discord</button>
-</div>
-<div>
-<button class="btn" id="btnSettings">⚙️</button>
-</div>
+<div class="topBar">
+<button id="btnAdd" class="iconBtn">＋</button>
+<button id="btnYouTube" class="iconBtn">YouTube</button>
+<button id="btnDiscord" class="iconBtn">Discord</button>
+<button id="btnSettings" class="iconBtn">⚙</button>
 </div>
 <div id="clock">--:--</div>
-</div>
-<div id="settings">
-<div class="panel">
-<h3 style="margin:4px 6px 10px">設定</h3>
-<div class="row">
-<div>時計表示</div>
-<div class="toggle" id="tgClock"><div class="knob"></div></div>
-</div>
-<div class="row">
-<div>時計色</div>
-<input type="color" id="clockColor" value="#00ffff">
-</div>
-<div class="row">
-<div>ウィンドウ画像</div>
-<button class="btn" id="uploadImg">アップロード</button>
-<input type="file" id="fileInput" accept="image/*">
-</div>
-<div class="row" style="justify-content:flex-end"><button class="btn" id="closeSettings">閉じる</button></div>
+<div id="settingsPanel">
+<div class="row"><div>時計表示</div><label id="tgClock" class="input" style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:8px;cursor:pointer"><input type="checkbox" id="chkClock" checked></label></div>
+<div class="row"><div>時計色</div><input id="clockColor" type="color" value="#69d2ff" class="input" style="padding:2px"></div>
+<div class="row"><div>ウィンドウ画像</div><button id="uploadBtn" class="iconBtn">画像追加</button><input id="fileInput" type="file" accept="image/*" class="hidden"></div>
+<div class="row" style="justify-content:flex-end"><button id="closeSettings" class="iconBtn">閉じる</button></div>
 </div>
 </div>
 <div id="space"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+<div id="cursor" class="cursor"></div>
+
 <script>
-const cam=document.getElementById("cam"),clockEl=document.getElementById("clock"),fileInput=document.getElementById("fileInput")
-async function startCam(){try{var stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});cam.srcObject=stream;await cam.play()}catch(e){alert("カメラ取得失敗 "+e)}}
-startCam()
-function fmtClock(d){let h=d.getHours(),m=d.getMinutes();return (h<10?"0"+h:h)+":"+(m<10?"0"+m:m)}
-function tick(){clockEl.textContent=fmtClock(new Date())}
-setInterval(tick,1000);tick()
-var tgClock=document.getElementById("tgClock"),settings=document.getElementById("settings"),btnSettings=document.getElementById("btnSettings"),btnCloseSettings=document.getElementById("closeSettings"),clockColorInput=document.getElementById("clockColor")
-function applyClockVisible(v){clockEl.style.display=v?"block":"none";tgClock.classList.toggle("on",v);localStorage.setItem("clockEnabled",v?"1":"0")}
-applyClockVisible(localStorage.getItem("clockEnabled")!=="0")
-tgClock.addEventListener("click",()=>applyClockVisible(!tgClock.classList.contains("on")))
-btnSettings.addEventListener("click",()=>settings.style.display="flex")
-btnCloseSettings.addEventListener("click",()=>settings.style.display="none")
-clockColorInput.addEventListener("input",()=>{clockEl.style.color=clockColorInput.value})
-const space=document.getElementById("space")
-function createBrowserWindow(url="https://www.google.com",imgSrc=null){
-var win=document.createElement("div");win.className="win";space.appendChild(win);win.style.display="block"
-var bodyContent=imgSrc?'<img src="'+imgSrc+'" style="width:100%;height:100%;object-fit:cover">':'<iframe src="'+url+'"></iframe>'
-win.innerHTML='<div class="winHdr"><span class="winTitle">Browser</span><button class="navBtn" data-act="close">×</button></div><div class="winBody">'+bodyContent+'</div>'
-var hdr=win.querySelector(".winHdr")
-var dragging=false,dx=0,dy=0
-hdr.addEventListener("pointerdown",e=>{dragging=true;dx=e.clientX-win.offsetLeft;dy=e.clientY-win.offsetTop;win.setPointerCapture(e.pointerId)})
-hdr.addEventListener("pointermove",e=>{if(!dragging)return;win.style.left=(e.clientX-dx)+"px";win.style.top=(e.clientY-dy)+"px";win.style.transform="translate(0,0) rotateX(15deg) rotateY(-15deg) translateZ(80px)"})
-hdr.addEventListener("pointerup",e=>{dragging=false;win.releasePointerCapture(e.pointerId)})
-win.querySelector('[data-act="close"]').addEventListener("click",()=>win.remove())
-apply3D(win)
-return win
+const cam=document.getElementById('cam'),clock=document.getElementById('clock'),btnAdd=document.getElementById('btnAdd'),btnYouTube=document.getElementById('btnYouTube'),btnDiscord=document.getElementById('btnDiscord'),btnSettings=document.getElementById('btnSettings'),settingsPanel=document.getElementById('settingsPanel'),closeSettings=document.getElementById('closeSettings'),chkClock=document.getElementById('chkClock'),clockColor=document.getElementById('clockColor'),uploadBtn=document.getElementById('uploadBtn'),fileInput=document.getElementById('fileInput'),space=document.getElementById('space'),cursor=document.getElementById('cursor')
+async function startCamera(){
+try{
+let stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false})
+cam.srcObject=stream
+await cam.play()
+}catch(e){try{let s=await navigator.mediaDevices.getUserMedia({video:true,audio:false});cam.srcObject=s;await cam.play()}catch(err){alert('カメラ取得失敗 '+err)}}
 }
-function apply3D(win){win.style.transform="translate(-50%,-50%) rotateX(15deg) rotateY(-15deg) translateZ(80px)";win.addEventListener("pointerenter",()=>win.style.transform="translate(-50%,-50%) rotateX(0deg) rotateY(0deg) translateZ(120px)");win.addEventListener("pointerleave",()=>win.style.transform="translate(-50%,-50%) rotateX(15deg) rotateY(-15deg) translateZ(80px)")}
-document.getElementById("btnAdd").addEventListener("click",()=>createBrowserWindow())
-document.getElementById("btnYouTubePWA").addEventListener("click",()=>window.open("https://m.youtube.com","_blank"))
-document.getElementById("btnDiscordPWA").addEventListener("click",()=>window.open("https://discord.com/app","_blank"))
-document.getElementById("uploadImg").addEventListener("click",()=>fileInput.click())
-fileInput.addEventListener("change",e=>{if(e.target.files[0]){let url=URL.createObjectURL(e.target.files[0]);createBrowserWindow(null,url)}})
+startCamera()
+function fmt(d){let h=d.getHours(),m=d.getMinutes();return (h<10?'0'+h:h)+':'+(m<10?'0'+m:m)}
+function tick(){clock.textContent=fmt(new Date())}
+setInterval(tick,1000);tick()
+chkClock.addEventListener('change',()=>{clock.style.display=chkClock.checked?'block':'none';localStorage.setItem('clock',chkClock.checked?'1':'0')})
+clock.style.display=(localStorage.getItem('clock')==='0')?'none':'block'
+clockColor.addEventListener('input',()=>{clock.style.color=clockColor.value;localStorage.setItem('clockColor',clockColor.value)})
+if(localStorage.getItem('clockColor')){clock.style.color=localStorage.getItem('clockColor');clockColor.value=localStorage.getItem('clockColor')}
+btnSettings.addEventListener('click',()=>{settingsPanel.style.display='block'})
+closeSettings.addEventListener('click',()=>{settingsPanel.style.display='none'})
+let wins=[]
+function saveState(){let data=wins.map(w=>({id:w.id,left:w.el.style.left,top:w.el.style.top,width:w.el.style.width,height:w.el.style.height,depth:w.depth,url:w.url,isImg:!!w.isImg}));localStorage.setItem('wins',JSON.stringify(data))}
+function loadState(){let d=localStorage.getItem('wins');if(!d) return;try{JSON.parse(d).forEach(s=>{let w=createWindow(s.url||'about:blank',s.isImg? true:false);w.el.style.left=s.left;w.el.style.top=s.top;w.el.style.width=s.width;w.el.style.height=s.height;w.setDepth(parseFloat(s.depth)||0)})}catch(e){}}
+function createWindow(url,asImage){
+let id='w'+Date.now()+Math.floor(Math.random()*999)
+let el=document.createElement('div');el.className='win';el.id=id;el.style.display='block';el.style.left='50%';el.style.top='50%';el.style.width='360px';el.style.height='220px';el.style.transform='translate(-50%,-50%) translateZ(0px) rotateX(6deg) rotateY(-6deg)';el.innerHTML='<div class="winHeader"><div class="winTitle">App</div><div class="winControls"><button class="btnSmall btnClose">×</button></div></div><div class="winBody"></div>'
+space.appendChild(el)
+let body=el.querySelector('.winBody')
+if(asImage && url){
+let img=document.createElement('img');img.src=url;img.style.width='100%';img.style.height='100%';img.style.objectFit='cover';body.appendChild(img)
+}else{
+let iframe=document.createElement('iframe');iframe.className='winIframe';iframe.src=url||'about:blank';iframe.allow='autoplay;fullscreen;picture-in-picture';body.appendChild(iframe)
+}
+let hdr=el.querySelector('.winHeader'), btnClose=el.querySelector('.btnClose')
+hdr.addEventListener('pointerdown',function(e){el.setPointerCapture&&el.setPointerCapture(e.pointerId);dragState.dragging=true;dragState.el=el;dragState.offsetX=e.clientX - el.offsetLeft;dragState.offsetY=e.clientY - el.offsetTop;bringFront(el);el.style.transition='' })
+hdr.addEventListener('pointerup',function(e){dragState.dragging=false;saveState()})
+hdr.addEventListener('pointercancel',function(e){dragState.dragging=false})
+btnClose.addEventListener('click',()=>{el.remove();wins=wins.filter(x=>x.el!==el);saveState()})
+el.addEventListener('pointerenter',()=>{el.style.transform='translate(-50%,-50%) translateZ(120px) rotateX(0deg) rotateY(0deg)';el.style.boxShadow='0 60px 120px rgba(0,0,0,.7)';})
+el.addEventListener('pointerleave',()=>{el.style.transform='translate(-50%,-50%) translateZ('+el.dataset.depth+'px) rotateX(6deg) rotateY(-6deg)';el.style.boxShadow='0 40px 80px rgba(0,0,0,.6)';})
+let winObj={id:id,el:el,depth:0,url:url,isImg:!!asImage,setDepth:function(z){this.depth=z;el.dataset.depth=z;el.style.transform='translate(-50%,-50%) translateZ('+z+'px) rotateX(6deg) rotateY(-6deg)';saveState()},getIframe:function(){return el.querySelector('iframe')}}
+wins.push(winObj)
+bringFront(el)
+saveState()
+return winObj
+}
+function bringFront(el){let max=0;document.querySelectorAll('.win').forEach(w=>{let z=parseInt(w.style.zIndex||'0');max=Math.max(max,z)});el.style.zIndex=(max+1).toString()}
+let dragState={dragging:false,el:null,offsetX:0,offsetY:0}
+document.addEventListener('pointermove',e=>{if(dragState.dragging && dragState.el){let x=e.clientX - dragState.offsetX;let y=e.clientY - dragState.offsetY;dragState.el.style.left=x+'px';dragState.el.style.top=y+'px'}})
+document.addEventListener('pointerup',e=>{if(dragState.dragging){dragState.dragging=false;saveState()}})
+btnAdd.addEventListener('click',()=>{createWindow('https://www.google.com',false)})
+btnYouTube.addEventListener('click',()=>{createWindow('https://www.youtube.com',false)})
+btnDiscord.addEventListener('click',()=>{createWindow('https://discord.com/app',false)})
+uploadBtn.addEventListener('click',()=>fileInput.click())
+fileInput.addEventListener('change',e=>{let f=e.target.files[0];if(!f) return;let u=URL.createObjectURL(f);createWindow(u,true)})
+let gpCursor={x:window.innerWidth/2,y:window.innerHeight/2,visibleUntil:0}
+function gpLoop(){let gps=navigator.getGamepads?navigator.getGamepads():[];let gp=gps[0];if(gp){let ax=gp.axes[0]||0,ay=gp.axes[1]||0,az=gp.axes[3]||0;let dead=0.15;let sens=12;let vx=Math.abs(ax)>dead?ax:0;let vy=Math.abs(ay)>dead?ay:0;gpCursor.x=Math.max(0,Math.min(window.innerWidth,gpCursor.x+vx*sens));gpCursor.y=Math.max(0,Math.min(window.innerHeight,gpCursor.y+vy*sens));cursor.style.left=gpCursor.x+'px';cursor.style.top=gpCursor.y+'px';if(vx||vy) gpCursor.visibleUntil=performance.now()+800;let btnA=(gp.buttons[0]&&gp.buttons[0].pressed), btnX=(gp.buttons[2]&&gp.buttons[2].pressed);if(btnX && !gpCursor._prevX){dispatchClick(gpCursor.x,gpCursor.y,'left')}if(btnA && !gpCursor._prevA){dispatchClick(gpCursor.x,gpCursor.y,'right')}gpCursor._prevX=btnX;gpCursor._prevA=btnA;let focusDelta=az||0;if(Math.abs(focusDelta)>0.2){let top=topWindowUnderCursor();if(top){let w=wins.find(x=>x.el===top);if(w){let newDepth=(parseFloat(w.depth)||0)+focusDelta*40;w.setDepth(Math.max(-400,newDepth))}}}}cursor.style.opacity=(performance.now()<gpCursor.visibleUntil)?'1':'0';requestAnimationFrame(gpLoop)}
+gpLoop()
+function dispatchClick(x,y,which){let el=document.elementFromPoint(x,y);if(!el) return;if(el.tagName==='IFRAME'){try{let ifr=el;ifr.contentWindow.focus();let evt=new MouseEvent('click',{bubbles:true,cancelable:true,clientX:x,clientY:y});ifr.contentWindow.document.elementFromPoint(x - ifr.getBoundingClientRect().left, y - ifr.getBoundingClientRect().top).dispatchEvent(evt);return}catch(e){window.open(el.src,'_blank');return}}else{let ev=new MouseEvent('click',{bubbles:true,cancelable:true,clientX:x,clientY:y});el.dispatchEvent(ev)}}
+function topWindowUnderCursor(){let el=document.elementFromPoint(gpCursor.x,gpCursor.y);while(el && !el.classList.contains('win')) el=el.parentElement;return el}
+window.addEventListener('resize',()=>{gpCursor.x=Math.min(gpCursor.x,window.innerWidth);gpCursor.y=Math.min(gpCursor.y,window.innerHeight)})
+loadState()
 </script>
 </body>
 </html>
