@@ -11,7 +11,7 @@ body.landscape{ transform-origin:center center; transform: rotate(90deg) transla
 #cameraVideo{position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:0; transform:none}
 #clock{position:fixed; right:14px; bottom:14px; z-index:4000; color:var(--clock-color); font-weight:700; font-family:system-ui, -apple-system, "Helvetica Neue", "Segoe UI"; font-size:18px; text-shadow:0 2px 6px rgba(0,0,0,0.6)}
 #hudButtons{position:fixed; left:14px; top:14px; z-index:4000; display:flex; gap:8px; align-items:center; pointer-events:auto}
-.btn{background:var(--ui-bg); color:#fff; border-radius:10px; padding:8px; min-width:40px; text-align:center; font-weight:600; box-shadow:0 6px 18px rgba(0,0,0,0.6); pointer-events:auto}
+button.btn{background:var(--ui-bg); color:#fff; border-radius:10px; padding:8px; min-width:40px; text-align:center; font-weight:600; box-shadow:0 6px 18px rgba(0,0,0,0.6); pointer-events:auto; border:0; outline:0; -webkit-tap-highlight-color: transparent; touch-action: manipulation;}
 .iconBtn{width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:10px; font-size:18px}
 #settingsPanel{position:fixed; left:14px; top:64px; z-index:4000; background:rgba(6,6,6,0.6); color:#fff; padding:10px; border-radius:10px; width:220px; display:none; font-family:system-ui; pointer-events:auto}
 #settingsPanel label{display:flex; justify-content:space-between; margin:6px 0; align-items:center}
@@ -33,10 +33,10 @@ body.landscape{ transform-origin:center center; transform: rotate(90deg) transla
 <div id="gpCursor" style="display:none"></div>
 <div id="clock" aria-hidden="false"></div>
 <div id="hudButtons">
-  <div id="gearBtn" class="btn iconBtn" title="設定">⚙</div>
-  <div id="addBtnUI" class="btn" title="ウィンドウ追加">＋</div>
+  <button id="gearBtn" class="btn iconBtn" type="button" title="設定">⚙</button>
+  <button id="addBtnUI" class="btn" type="button" title="ウィンドウ追加">＋</button>
 </div>
-<div id="settingsPanel">
+<div id="settingsPanel" aria-hidden="true">
   <div style="font-weight:800;margin-bottom:6px">設定</div>
   <label>時計表示 <input id="clockToggle" type="checkbox" checked></label>
   <label>時計色 <input id="clockColor" type="color" value="#66f8ff"></label>
@@ -47,6 +47,7 @@ body.landscape{ transform-origin:center center; transform: rotate(90deg) transla
     <button id="resetBtn" class="btn" style="flex:1">初期化</button>
   </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/renderers/CSS3DRenderer.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
