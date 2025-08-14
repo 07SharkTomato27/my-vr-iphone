@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>VR</title>
+<title>MetaQuest風VR</title>
 <style>
 html,body{margin:0;padding:0;overflow:hidden;background:#000;touch-action:none}
-#cameraVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1}
+#cameraVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;background:#000}
 #clock{position:absolute;bottom:10px;right:10px;font-size:20px;font-family:sans-serif;color:#0ff}
 #uiButtons{position:absolute;top:10px;left:10px;z-index:10;display:flex;gap:10px}
 .uiBtn{width:40px;height:40px;background:rgba(0,0,0,0.5);color:#0ff;font-size:24px;border:none;border-radius:8px;cursor:pointer}
@@ -36,21 +36,42 @@ iframe{width:100%;height:100%}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.0/gsap.min.js"></script>
 <script src="js/hand.js"></script>
 <script>
+async function startCamera(){
+const video=document.getElementById('cameraVideo')
+try{
+const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:"environment"}},audio:false})
+video.srcObject=stream
+await video.play()
+}catch(e){console.error("カメラ取得失敗",e)}}
+startCamera()
 const scene=new THREE.Scene()
-const camera=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,5000)
-camera.position.z=600
+const camera3D=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,5000)
+camera3D.position.z=600
 const renderer=new THREE.CSS3DRenderer()
 renderer.setSize(window.innerWidth,window.innerHeight)
 renderer.domElement.style.position='absolute'
 renderer.domElement.style.top=0
 document.body.appendChild(renderer.domElement)
 let windows=[]
-function createWindow(url="https://www.youtube.com"){const div=document.createElement('div');div.className="window";div.style.opacity=document.getElementById('windowOpacity').value;div.style.borderColor=document.getElementById('windowBorderColor').value;const iframe=document.createElement('iframe');iframe.src=url;div.appendChild(iframe);const obj=new THREE.CSS3DObject(div);obj.position.set(Math.random()*400-200,Math.random()*300-150,-500);obj.rotation.set(0,0,0);scene.add(obj);windows.push(obj);HandJS.makeDraggable(obj);saveWindows()}
+function createWindow(url="https://www.youtube.com"){
+const div=document.createElement('div')
+div.className="window"
+div.style.opacity=document.getElementById('windowOpacity').value
+div.style.borderColor=document.getElementById('windowBorderColor').value
+const iframe=document.createElement('iframe')
+iframe.src=url
+div.appendChild(iframe)
+const obj=new THREE.CSS3DObject(div)
+obj.position.set(Math.random()*400-200,Math.random()*300-150,-500)
+obj.rotation.set(0,0,0)
+scene.add(obj)
+windows.push(obj)
+HandJS.makeDraggable(obj)
+saveWindows()}
 function saveWindows(){const data=windows.map(w=>({x:w.position.x,y:w.position.y,z:w.position.z,rotX:w.rotation.x,rotY:w.rotation.y,rotZ:w.rotation.z,url:w.element.querySelector('iframe').src}));localStorage.setItem('windows',JSON.stringify(data))}
 function loadWindows(){const data=JSON.parse(localStorage.getItem('windows')||'[]');data.forEach(d=>{const div=document.createElement('div');div.className="window";div.style.opacity=document.getElementById('windowOpacity').value;div.style.borderColor=document.getElementById('windowBorderColor').value;const iframe=document.createElement('iframe');iframe.src=d.url;div.appendChild(iframe);const obj=new THREE.CSS3DObject(div);obj.position.set(d.x,d.y,d.z);obj.rotation.set(d.rotX,d.rotY,d.rotZ);scene.add(obj);windows.push(obj);HandJS.makeDraggable(obj)})}
 document.getElementById('addWindowBtn').addEventListener('click',()=>{createWindow()})
 document.getElementById('settingsBtn').addEventListener('click',()=>{const sp=document.getElementById('settingsPanel');sp.style.display=sp.style.display==='none'?'flex':'none'})
-navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:"environment"}},audio:false}).then(stream=>{document.getElementById('cameraVideo').srcObject=stream})
 const clockEl=document.getElementById('clock')
 function updateClock(){const now=new Date();clockEl.textContent=`${now.getHours()}時:${now.getMinutes()}分`}
 setInterval(updateClock,1000);updateClock()
@@ -61,9 +82,9 @@ document.getElementById('clockG').addEventListener('input',updateClockColor)
 document.getElementById('clockB').addEventListener('input',updateClockColor)
 document.getElementById('windowOpacity').addEventListener('input',(e)=>{windows.forEach(w=>w.element.style.opacity=e.target.value)})
 document.getElementById('windowBorderColor').addEventListener('input',(e)=>{windows.forEach(w=>w.element.style.borderColor=e.target.value)})
-function animate(){requestAnimationFrame(animate);renderer.render(scene,camera)}
+function animate(){requestAnimationFrame(animate);renderer.render(scene,camera3D)}
 animate()
-window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)})
+window.addEventListener('resize',()=>{camera3D.aspect=window.innerWidth/window.innerHeight;camera3D.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)})
 loadWindows()
 </script>
 </body>
