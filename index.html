@@ -3,358 +3,252 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Phone VR</title>
-<link rel="manifest" href="data:application/manifest+json,{&quot;name&quot;:&quot;Phone VR UI&quot;,&quot;short_name&quot;:&quot;VR UI&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#000&quot;,&quot;theme_color&quot;:&quot;#000&quot;}">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>MetaQuestVR (web)</title>
 <style>
-  :root {
-    --ui-bg: rgba(20,24,28,.55);
-    --ui-blur: blur(12px);
-    --ui-border: rgba(255,255,255,.14);
-    --accent: #69d2ff;
-    --glass: linear-gradient( to bottom right, rgba(255,255,255,.08), rgba(255,255,255,.03) );
-  }
-  html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
-  #camWrap{position:fixed;inset:0;overflow:hidden;background:#000}
-  #cam{
-    position:absolute;left:50%;top:50%;
-    transform:translate(-50%,-50%) rotate(90deg);
-    transform-origin:center center;
-    width:100vh;height:100vw;object-fit:cover;backface-visibility:hidden
-  }
-  .leftCam #cam{ transform:translate(-50%,-50%) rotate(-90deg) }
-  #ui{position:fixed;inset:0;pointer-events:none}
-  .bar{position:fixed;top:0;left:0;right:0;display:flex;gap:.5rem;padding:.6rem .8rem;justify-content:space-between;pointer-events:auto}
-  .leftGroup{display:flex;gap:.5rem}
-  .btn{
-    background:var(--ui-bg);backdrop-filter:var(--ui-blur);-webkit-backdrop-filter:var(--ui-blur);
-    border:1px solid var(--ui-border);color:#fff;border-radius:14px;padding:.5rem .8rem;font-size:14px;cursor:pointer
-  }
-  .btn:active{transform:scale(.98)}
-  #dock{position:fixed;left:50%;bottom:2.2rem;transform:translateX(-50%);display:flex;gap:.8rem;pointer-events:auto}
-  .tile{
-    width:72px;height:72px;border-radius:18px;border:1px solid var(--ui-border);
-    background:var(--ui-bg);backdrop-filter:var(--ui-blur);-webkit-backdrop-filter:var(--ui-blur);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-decoration:none
-  }
-  .tile span{font-size:11px;margin-top:.25rem;opacity:.9}
-  #clock{
-    position:fixed;right:.9rem;bottom:.7rem;font-family:ui-monospace,Menlo,Consolas,monospace;
-    color:#bff0ff;font-weight:700;font-size:22px;letter-spacing:.5px;
-    padding:.4rem .7rem;border-radius:14px;border:1px solid rgba(120,200,255,.25);
-    background:rgba(0,12,20,.35);box-shadow:0 0 14px rgba(105,210,255,.45), inset 0 0 30px rgba(60,170,255,.12);
-    text-shadow:0 0 10px rgba(105,210,255,.8), 0 0 20px rgba(105,210,255,.55)
-  }
-  #settings{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:auto}
-  #settings .panel{
-    width:min(92vw,520px);background:var(--ui-bg),var(--glass);backdrop-filter:var(--ui-blur);-webkit-backdrop-filter:var(--ui-blur);
-    border:1px solid var(--ui-border);border-radius:20px;padding:16px;color:#fff
-  }
-  .row{display:flex;align-items:center;justify-content:space-between;padding:10px 6px;gap:12px}
-  .toggle{inline-size:52px;block-size:30px;border-radius:999px;background:#333;position:relative;cursor:pointer;border:1px solid var(--ui-border)}
-  .knob{position:absolute;top:3px;left:3px;inline-size:24px;block-size:24px;border-radius:50%;background:#fff;transition:transform .15s}
-  .toggle.on{background:var(--accent)} .toggle.on .knob{transform:translateX(22px)}
-  .sel,.input{
-    appearance:none;background:#0b0b0b;border:1px solid var(--ui-border);color:#fff;border-radius:10px;padding:.45rem .6rem
-  }
-  #cursor{position:fixed;left:50%;top:50%;width:22px;height:22px;border:2px solid var(--accent);
-          border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:0;transition:opacity .12s;box-shadow:0 0 12px rgba(105,210,255,.6)}
-  .cursor-dot{position:absolute;left:50%;top:50%;width:4px;height:4px;background:var(--accent);
-              border-radius:50%;transform:translate(-50%,-50%)}
-  #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:20}
-  #start button{font-size:18px}
-  #space{position:fixed;inset:0;pointer-events:none;perspective:1200px}
-  .win{
-    position:absolute;left:50%;top:46%;transform-style:preserve-3d;
-    transform:translate(-50%,-50%) rotateX(8deg) rotateY(-6deg) translateZ(80px);
-    width:min(92vw,980px);height:min(62vh,560px);border-radius:18px;overflow:hidden;
-    box-shadow:0 30px 80px rgba(0,0,0,.55), inset 0 0 0 1px var(--ui-border);
-    display:none;pointer-events:auto;background:#000
-  }
-  .winHdr{
-    position:absolute;left:0;right:0;top:0;height:46px;display:flex;align-items:center;gap:8px;
-    padding:0 10px;background:var(--ui-bg),var(--glass);backdrop-filter:var(--ui-blur);-webkit-backdrop-filter:var(--ui-blur);color:#fff;cursor:grab
-  }
-  .winHdr:active{cursor:grabbing}
-  .winTitle{font-weight:700;margin-right:6px}
-  .winBody{position:absolute;left:0;right:0;top:46px;bottom:0;background:#000}
-  .iconBtn{border:1px solid var(--ui-border);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;padding:.35rem .6rem;cursor:pointer;white-space:nowrap}
-  .navBtn{border:1px solid var(--ui-border);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;padding:.35rem .6rem;cursor:pointer}
-  .urlbar{flex:1;min-width:120px;background:#0b0b0b;color:#fff;border:1px solid var(--ui-border);border-radius:10px;padding:.4rem .55rem}
-  .win iframe{border:0;width:100%;height:100%;background:#111}
-  .hidden{display:none}
+:root{ --clock-color: #66f8ff; --ui-bg: rgba(0,0,0,0.45); --ui-accent: #29a3ff; }
+html,body{height:100%;margin:0;background:#000;overflow:hidden;-webkit-user-select:none;user-select:none}
+body.landscape{ transform-origin:center center; transform: rotate(90deg) translateY(-100vh); width:100vh; height:100vw; overflow:hidden; position:fixed; left:0; top:0}
+#cameraVideo{position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:0; transform: none; -webkit-transform: none; background:#000}
+#clock{position:fixed; right:14px; bottom:14px; z-index:2000; color:var(--clock-color); font-weight:700; font-family:system-ui, -apple-system, "Helvetica Neue", "Segoe UI"; font-size:18px; text-shadow:0 2px 6px rgba(0,0,0,0.6)}
+#hudButtons{position:fixed; left:14px; top:14px; z-index:2000; display:flex; gap:8px; align-items:center}
+.btn{background:var(--ui-bg); color:#fff; border-radius:10px; padding:8px; min-width:40px; text-align:center; font-weight:600; box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+.iconBtn{width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:10px; font-size:18px}
+#settingsPanel{position:fixed; left:14px; top:64px; z-index:2000; background:rgba(6,6,6,0.6); color:#fff; padding:10px; border-radius:10px; width:220px; display:none; font-family:system-ui}
+#settingsPanel label{display:flex; justify-content:space-between; margin:6px 0; align-items:center}
+#settingsPanel input[type=range]{width:100%}
+#gpCursor{position:fixed; width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.95); transform:translate(-50%,-50%); z-index:1500; pointer-events:none; box-shadow:0 6px 18px rgba(0,0,0,0.5)}
+#threeContainer{position:fixed; inset:0; z-index:100; pointer-events:none}
+.app-window{width:360px; height:220px; border-radius:10px; overflow:hidden; background:rgba(18,18,24,0.88); box-shadow:0 14px 40px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.04); transform-style:preserve-3d; cursor:grab; pointer-events:auto}
+.titlebar{height:34px; display:flex; align-items:center; padding:0 10px; gap:8px; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); color:#fff; font-weight:700; font-size:14px}
+.title-actions{margin-left:auto; display:flex; gap:6px}
+.tbtn{width:30px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff; border:1px solid rgba(255,255,255,0.03); cursor:pointer}
+.app-iframe{width:100%; height:calc(100% - 34px); border:none; background:#fff}
+#addBtn{position:fixed; left:14px; bottom:14px; z-index:2000}
+#hint{position:fixed; top:14px; right:14px; color:#ddd; z-index:2000; font-size:13px}
+@media (max-width:600px){ .app-window{width:300px;height:200px} }
 </style>
 </head>
 <body>
-  <div id="camWrap"><video id="cam" playsinline autoplay muted></video></div>
-
-  <div id="ui" aria-hidden="false">
-    <div class="bar">
-      <div class="leftGroup">
-        <button class="btn" id="btnAdd">＋</button>
-        <button class="btn" id="btnYouTubePWA">YouTube PWA</button>
-        <button class="btn" id="btnDiscordPWA">Discord PWA</button>
-      </div>
-      <div>
-        <button class="btn" id="btnSettings">⚙️ 設定</button>
-        <button class="btn" id="btnFull">⛶</button>
-      </div>
-    </div>
-    <div id="dock" aria-label="ランチャー">
-      <button class="tile" id="openYTWin" type="button" title="YouTubeウィンドウ">
-        <svg width="30" height="20" viewBox="0 0 30 20" aria-hidden="true"><rect x="0" y="0" width="30" height="20" rx="5" ry="5" fill="none" stroke="white"/></svg>
-        <span>YouTube</span>
-      </button>
-      <a class="tile" href="https://discord.com/app" target="_blank" rel="noopener">
-        <svg width="28" height="20" viewBox="0 0 28 20" aria-hidden="true"><rect x="0" y="0" width="28" height="20" rx="5" ry="5" fill="none" stroke="white"/></svg>
-        <span>Discord</span>
-      </a>
-    </div>
-    <div id="clock" role="status">--:--</div>
-    <div id="cursor"><div class="cursor-dot"></div></div>
+<video id="cameraVideo" autoplay playsinline muted></video>
+<div id="threeContainer"></div>
+<div id="gpCursor" style="display:none"></div>
+<div id="clock" aria-hidden="false"></div>
+<div id="hudButtons">
+  <div id="gearBtn" class="btn iconBtn" title="設定">⚙</div>
+  <div id="addBtnUI" class="btn" title="ウィンドウ追加">＋</div>
+</div>
+<div id="settingsPanel">
+  <div style="font-weight:800;margin-bottom:6px">設定</div>
+  <label>時計表示 <input id="clockToggle" type="checkbox" checked></label>
+  <label>時計色 <input id="clockColor" type="color" value="#66f8ff"></label>
+  <label>ウィンドウ透明度 <input id="wndAlpha" type="range" min="20" max="100" value="88"></label>
+  <label>ウィンドウシャドウ <input id="shadowToggle" type="checkbox" checked></label>
+  <div style="display:flex;gap:6px;margin-top:8px">
+    <button id="addWindowBtn" class="btn" style="flex:1">＋ ウィンドウ</button>
+    <button id="resetBtn" class="btn" style="flex:1">初期化</button>
   </div>
-
-  <div id="settings">
-    <div class="panel">
-      <h3 style="margin:4px 6px 10px">設定</h3>
-      <div class="row">
-        <div>時計を表示</div>
-        <div class="toggle" id="tgClock"><div class="knob"></div></div>
-      </div>
-      <div class="row">
-        <div>カーソル感度</div>
-        <input id="sens" class="input" type="range" min="0.5" max="3" step="0.1" value="1.2" style="width:180px">
-      </div>
-      <div class="row">
-        <div>向き</div>
-        <select id="orient" class="sel">
-          <option value="right">カメラが右（標準）</option>
-          <option value="left">カメラが左</option>
-        </select>
-      </div>
-      <div class="row" style="justify-content:flex-end"><button class="btn" id="closeSettings">閉じる</button></div>
-    </div>
-  </div>
-
-  <div id="start">
-    <button class="btn" id="btnStart">カメラ開始・横向き固定</button>
-  </div>
-
-  <div id="space"></div>
-
+</div>
+<div id="hint">Controller: L-stick move → show cursor. A/X mapped to buttons.</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/renderers/CSS3DRenderer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="js/hand.js"></script>
 <script>
-(function(){
-  var $=function(s){return document.querySelector(s)},$$=function(s){return Array.from(document.querySelectorAll(s))};
-  var body=document.body,cam=$("#cam"),btnStart=$("#btnStart"),startOverlay=$("#start");
-  var clockEl=$("#clock"),tgClock=$("#tgClock"),settings=$("#settings"),btnSettings=$("#btnSettings"),btnFull=$("#btnFull"),btnCloseSettings=$("#closeSettings");
-  var cursor=$("#cursor"),sensInput=$("#sens"),orientSel=$("#orient");
-  var btnAdd=$("#btnAdd"),space=$("#space"),openYTWin=$("#openYTWin");
-  var btnYouTubePWA=$("#btnYouTubePWA"),btnDiscordPWA=$("#btnDiscordPWA");
-
-  btnStart.addEventListener("click",async function(){
-    try{
-      if(document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
-      if(screen.orientation&&screen.orientation.lock) {try{await screen.orientation.lock("landscape")}catch(e){}}
-    }catch(e){}
-    try{
-      var stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
-      cam.srcObject=stream;
-      startOverlay.style.display="none";
-    }catch(e){alert("カメラを取得できません: "+e)}
-  },{passive:true});
-
-  function fitVideo(){
-    cam.style.width=window.innerHeight+"px";
-    cam.style.height=window.innerWidth+"px";
-  }
-  function autoRotateByFeed(){
-    var vW=cam.videoWidth||0,vH=cam.videoHeight||0;
-    if(!vW||!vH) return;
-    var isPortrait=vH>vW;
-    var leftMode=body.classList.contains("leftCam");
-    if(isPortrait){
-      cam.style.transform="translate(-50%,-50%) "+(leftMode?"rotate(-90deg)":"rotate(90deg)");
-    }else{
-      cam.style.transform="translate(-50%,-50%) "+(leftMode?"rotate(180deg)":"rotate(0deg)");
+(async function main(){
+  try{ if(screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape') }catch(e){}
+  function applyLandscapeClass(){ if(window.innerHeight > window.innerWidth){ document.body.classList.add('landscape') } else { document.body.classList.remove('landscape') } }
+  applyLandscapeClass(); window.addEventListener('resize', applyLandscapeClass);
+  const video = document.getElementById('cameraVideo');
+  async function startCam(){
+    try{ const s = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: { exact:"environment" } }, audio:false }); video.srcObject = s }catch(_){
+      try{ const s = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: "environment" }, audio:false }); video.srcObject = s }catch(err){ console.warn('camera failed', err) }
     }
-    fitVideo();
   }
-  cam.addEventListener("loadedmetadata",autoRotateByFeed);
-  window.addEventListener("resize",fitVideo);
-  fitVideo();
-
-  function fmtClock(d){var h=d.getHours(),m=d.getMinutes();return (h<10?"0"+h:h)+":"+(m<10?"0"+m:m)}
-  function tick(){clockEl.textContent=fmtClock(new Date())}
-  setInterval(tick,1000);tick();
-  var CLOCK_KEY="clockEnabled";
-  function applyClockVisible(v){
-    clockEl.style.display=v?"block":"none";
-    tgClock.classList.toggle("on",v);
-    localStorage.setItem(CLOCK_KEY,v?"1":"0");
+  startCam();
+  const clockEl = document.getElementById('clock');
+  const clockToggle = document.getElementById('clockToggle');
+  const clockColorInput = document.getElementById('clockColor');
+  function fmt2(n){ return n<10?('0'+n):n }
+  function updateClock(){ const d = new Date(); clockEl.textContent = `${d.getHours()}時:${fmt2(d.getMinutes())}` }
+  updateClock(); setInterval(updateClock, 1000);
+  clockToggle.addEventListener('change', ()=>{ clockEl.style.display = clockToggle.checked ? 'block' : 'none' });
+  clockColorInput.addEventListener('input', ()=>{ clockEl.style.color = clockColorInput.value });
+  const threeContainer = document.getElementById('threeContainer');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 1, 10000);
+  camera.position.set(0,0,800);
+  const renderer = new THREE.CSS3DRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.domElement.style.pointerEvents = 'none';
+  threeContainer.appendChild(renderer.domElement);
+  window.addEventListener('resize', ()=>{ camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight) });
+  const cssObjects = [];
+  const stateKey = 'mqvr_windows_v1';
+  function makeWindowElement(data){
+    const wrapper = document.createElement('div');
+    wrapper.className = 'app-window';
+    wrapper.style.opacity = (data.alpha||0.88);
+    wrapper.style.background = `rgba(18,18,24,${(data.alpha||0.88)})`;
+    wrapper.style.width = (data.w||360)+'px';
+    wrapper.style.height = (data.h||220)+'px';
+    const title = document.createElement('div');
+    title.className = 'titlebar';
+    title.innerHTML = `<div class="titleText">${data.title||'App'}</div>`;
+    const actions = document.createElement('div');
+    actions.className = 'title-actions';
+    const close = document.createElement('button'); close.className='tbtn'; close.innerHTML='✕';
+    const grab = document.createElement('button'); grab.className='tbtn'; grab.innerHTML='✋';
+    const urlBtn = document.createElement('button'); urlBtn.className='tbtn'; urlBtn.innerHTML='🌐';
+    actions.appendChild(urlBtn); actions.appendChild(grab); actions.appendChild(close);
+    title.appendChild(actions);
+    wrapper.appendChild(title);
+    const iframe = document.createElement('iframe');
+    iframe.className = 'app-iframe';
+    iframe.src = data.url || 'https://www.youtube.com';
+    wrapper.appendChild(iframe);
+    let dragging=false, lastPointer=null, vel={x:0,y:0};
+    title.addEventListener('pointerdown', (ev)=>{ ev.preventDefault(); dragging=true; lastPointer = {x:ev.clientX,y:ev.clientY, t:performance.now()}; wrapper.style.cursor='grabbing'; if(elRef && elRef.position) elRef.position.z = -50 });
+    window.addEventListener('pointermove', (ev)=>{ if(!dragging) return; const now = performance.now(); const dx = ev.clientX - lastPointer.x; const dy = ev.clientY - lastPointer.y; const dt = Math.max(1, now - lastPointer.t); vel.x = dx/dt*16; vel.y = dy/dt*16; lastPointer = {x:ev.clientX,y:ev.clientY,t:now}; if(elRef){ elRef.userData.screenX = (elRef.userData.screenX||window.innerWidth/2) + dx; elRef.userData.screenY = (elRef.userData.screenY||window.innerHeight/2) + dy; updateObjFromScreen(elRef) } });
+    window.addEventListener('pointerup', ()=>{ if(dragging){ dragging=false; wrapper.style.cursor='grab'; if(elRef){ const throwZ = Math.min(400, Math.max(-800, elRef.position.z + (-vel.y*2))); gsap.to(elRef.position, {z:throwZ, duration:0.6, ease:"power3.out"}) } } });
+    close.addEventListener('click', ()=>{ if(elRef){ scene.remove(elRef); const i = cssObjects.findIndex(x=>x.obj===elRef); if(i>=0) cssObjects.splice(i,1); saveState() } });
+    urlBtn.addEventListener('click', ()=>{ const u = prompt('URLを入力'); if(u && elRef){ elRef.element.querySelector('iframe').src = u; elRef.userData.url = u; saveState() } });
+    grab.addEventListener('click', ()=>{ if(elRef){ const dz = (elRef.position.z > 0) ? -300 : 0; gsap.to(elRef.position, {z:dz, duration:0.4, ease:"power2.inOut"}) } });
+    let elRef = null;
+    return {wrapper, iframe, setRef:(ref)=> elRef=ref};
   }
-  applyClockVisible(localStorage.getItem(CLOCK_KEY)!=="0");
-  tgClock.addEventListener("click",function(){applyClockVisible(!tgClock.classList.contains("on"))});
-
-  btnSettings.addEventListener("click",function(){settings.style.display="flex"});
-  btnCloseSettings.addEventListener("click",function(){settings.style.display="none"});
-
-  btnFull.addEventListener("click",async function(){
+  function updateObjFromScreen(cssObj){
+    const sx = (cssObj.userData.screenX !== undefined) ? cssObj.userData.screenX : window.innerWidth/2;
+    const sy = (cssObj.userData.screenY !== undefined) ? cssObj.userData.screenY : window.innerHeight/2;
+    const vec = new THREE.Vector3((sx/window.innerWidth)*2-1, -(sy/window.innerHeight)*2+1, 0.5);
+    vec.unproject(camera);
+    const dir = vec.sub(camera.position).normalize();
+    const distance = Math.abs(cssObj.position.z) + 600;
+    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+    cssObj.position.copy(pos);
+  }
+  function createWindow(data){
+    const {wrapper,setRef} = makeWindowElement(data);
+    const cssObject = new THREE.CSS3DObject(wrapper);
+    cssObject.userData = Object.assign({url:data.url||'https://www.youtube.com', alpha:(data.alpha||0.88)}, { screenX: window.innerWidth/2 + (Math.random()*200-100), screenY: window.innerHeight/2 + (Math.random()*120-60) });
+    updateObjFromScreen(cssObject);
+    cssObject.position.z = data.z || -300 - Math.random()*400;
+    scene.add(cssObject);
+    setRef(cssObject);
+    cssObjects.push({obj:cssObject, el:wrapper});
+    wrapper.style.pointerEvents = 'auto';
+    wrapper.addEventListener('click', ()=>{ try{ wrapper.querySelector('iframe').focus() }catch(e){} });
+    saveState();
+    return cssObject;
+  }
+  function saveState(){
     try{
-      if(!document.fullscreenElement){await document.documentElement.requestFullscreen(); if(screen.orientation&&screen.orientation.lock){try{await screen.orientation.lock("landscape")}catch(e){}}}
-      else{await document.exitFullscreen()}
-    }catch(e){}
-  });
-
-  var ORIENT_KEY="camSide";
-  function applyOrient(side){
-    body.classList.toggle("leftCam",side==="left");
-    localStorage.setItem(ORIENT_KEY,side);
-    autoRotateByFeed();
+      const arr = cssObjects.map(x=>{
+        const u = x.obj.userData;
+        return {url:u.url || x.obj.element.querySelector('iframe').src, screenX:u.screenX, screenY:u.screenY, z:x.obj.position.z, w: parseInt(x.el.style.width||360), h: parseInt(x.el.style.height||220), title: x.el.querySelector('.titleText').textContent, alpha: u.alpha};
+      });
+      localStorage.setItem(stateKey, JSON.stringify(arr));
+    }catch(e){console.warn('save fail', e);}
   }
-  orientSel.value=localStorage.getItem(ORIENT_KEY)||"right";
-  applyOrient(orientSel.value);
-  orientSel.addEventListener("change",function(){applyOrient(orientSel.value)});
-
-  var cx=window.innerWidth/2,cy=window.innerHeight/2,showUntil=0,prevBtnX=false;
-  var sensitivity=parseFloat(localStorage.getItem("cursorSensitivity")||"1.2")||1.2;
-  sensInput.value=String(sensitivity);
-  sensInput.addEventListener("input",function(){sensitivity=parseFloat(sensInput.value);localStorage.setItem("cursorSensitivity",sensitivity)});
-  function clamp(v,min,max){return v<min?min:v>max?max:v}
-  function gpLoop(){
-    var pads=navigator.getGamepads?navigator.getGamepads():[];
-    var gp=pads&&pads[0];
-    if(gp){
-      var ax=gp.axes[0]||0,ay=gp.axes[1]||0;
-      var dead=0.15;
-      var vx=Math.abs(ax)>dead?ax:0;
-      var vy=Math.abs(ay)>dead?ay:0;
-      if(vx||vy){cx=clamp(cx+vx*12*sensitivity,0,window.innerWidth);cy=clamp(cy+vy*12*sensitivity,0,window.innerHeight);showUntil=performance.now()+900}
-      var btnX=!!(gp.buttons[2]&&gp.buttons[2].pressed);
-      if(btnX&&!prevBtnX){
-        var el=document.elementFromPoint(cx,cy);
-        if(el){
-          if(el instanceof HTMLIFrameElement){
-            el.focus();
-          }else{
-            if(typeof el.click==="function"){el.click()}else{el.dispatchEvent(new MouseEvent("click",{bubbles:true,clientX:cx,clientY:cy}))}
-          }
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(stateKey);
+      if(!raw) return;
+      const arr = JSON.parse(raw);
+      arr.forEach(a=> createWindow(a));
+    }catch(e){console.warn('load fail', e);}
+  }
+  document.getElementById('addWindowBtn').addEventListener('click', ()=>{ createWindow({url:'https://www.youtube.com', alpha: document.getElementById('wndAlpha').value/100});});
+  document.getElementById('addBtnUI').addEventListener('click', ()=>{ createWindow({url:'https://www.youtube.com', alpha: document.getElementById('wndAlpha').value/100});});
+  document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('全部リセットする？')){ localStorage.removeItem(stateKey); location.reload(); }});
+  document.getElementById('gearBtn').addEventListener('click', ()=>{ const p=document.getElementById('settingsPanel'); p.style.display = p.style.display==='block' ? 'none' : 'block'; });
+  loadState();
+  const raycaster = new THREE.Raycaster();
+  function render(){ requestAnimationFrame(render); renderer.render(scene,camera); }
+  render();
+  renderer.domElement.style.pointerEvents = 'auto';
+  window.addEventListener('resize', ()=>{ cssObjects.forEach(x=> updateObjFromScreen(x.obj)); });
+  const gpCursor = document.getElementById('gpCursor');
+  let cursorVisible = false;
+  let lastGp = null;
+  const gpState = {x: window.innerWidth/2, y: window.innerHeight/2, zIndexAdjust:0};
+  function pollGamepads(){
+    const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+    for(const g of gps){
+      if(!g) continue;
+      lastGp = g;
+      const ax0 = g.axes[0] || 0;
+      const ax1 = g.axes[1] || 0;
+      const dz = (v)=> Math.abs(v) < 0.12 ? 0 : v;
+      const mvX = dz(ax0) * 14;
+      const mvY = dz(ax1) * 14;
+      if(mvX!==0 || mvY!==0){
+        gpState.x = Math.max(0, Math.min(window.innerWidth, gpState.x + mvX));
+        gpState.y = Math.max(0, Math.min(window.innerHeight, gpState.y + mvY));
+        if(!cursorVisible){ cursorVisible=true; gpCursor.style.display='block'; gpCursor.style.opacity='1'; }
+        gpCursor.style.left = gpState.x + 'px';
+        gpCursor.style.top = gpState.y + 'px';
+        const hits = cssObjects.map(x=>{
+          const el = x.el;
+          const rect = el.getBoundingClientRect();
+          return {obj:x.obj, rect, dist: Math.hypot(gpState.x - (rect.left+rect.width/2), gpState.y - (rect.top+rect.height/2))};
+        }).sort((a,b)=>a.dist-b.dist);
+        if(hits.length>0 && hits[0].dist < 260){
+          const target = hits[0].obj;
+          cssObjects.forEach(x=>{ if(x.obj===target) gsap.to(x.obj.position,{z:-80, duration:0.2}); else gsap.to(x.obj.position,{z: -300, duration:0.4});});
         }
-        showUntil=performance.now()+900;
       }
-      prevBtnX=btnX;
+      const aBtn = g.buttons[0] && g.buttons[0].pressed;
+      const xBtn = g.buttons[2] && g.buttons[2].pressed;
+      const plusBtn = g.buttons[9] && g.buttons[9].pressed;
+      if(plusBtn){ if(!gpState._plusLock){ createWindow({url:'https://www.youtube.com', alpha: document.getElementById('wndAlpha').value/100}); gpState._plusLock=true; setTimeout(()=>gpState._plusLock=false,400); } }
+      if(aBtn){ if(!gpState._aLock){ emulateClick('right'); gpState._aLock=true; setTimeout(()=>gpState._aLock=false,200); } }
+      if(xBtn){ if(!gpState._xLock){ emulateClick('left'); gpState._xLock=true; setTimeout(()=>gpState._xLock=false,200); } }
     }
-    cursor.style.left=cx+"px";
-    cursor.style.top=cy+"px";
-    cursor.style.opacity=performance.now()<showUntil?"1":"0";
-    requestAnimationFrame(gpLoop);
+    requestAnimationFrame(pollGamepads);
   }
-  gpLoop();
-  window.addEventListener("resize",function(){cx=clamp(cx,0,window.innerWidth);cy=clamp(cy,0,window.innerHeight)});
-  document.addEventListener("pointermove",function(e){cx=e.clientX;cy=e.clientY;showUntil=performance.now()+600},{passive:true});
-
-  function createBrowserWindow(opts){
-    var id="w"+Math.random().toString(36).slice(2,7);
-    var win=document.createElement("div");win.className="win";win.id=id;
-    win.innerHTML='<div class="winHdr">'+
-      '<span class="winTitle">Browser</span>'+
-      '<button class="navBtn" data-act="back">◀</button>'+
-      '<button class="navBtn" data-act="fwd">▶</button>'+
-      '<input class="urlbar" placeholder="URLを入力" value="'+(opts&&opts.url?opts.url:"")+'">'+
-      '<button class="iconBtn" data-act="go">開く</button>'+
-      '<button class="iconBtn" data-act="yt">YT制御</button>'+
-      '<button class="iconBtn" data-act="pop">新タブ</button>'+
-      '<button class="iconBtn" data-act="close">閉じる</button>'+
-    '</div>'+
-    '<div class="winBody"><iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>';
-    space.appendChild(win);
-    var hdr=win.querySelector(".winHdr"), urlbar=win.querySelector(".urlbar"), iframe=win.querySelector("iframe");
-    var zBase=1000+document.querySelectorAll(".win").length;
-    win.style.zIndex=String(zBase);
-    win.style.display="block";
-    if(opts&&opts.url) navigateTo(opts.url,iframe,urlbar,true);
-    var dragging=false,dx=0,dy=0;
-    hdr.addEventListener("pointerdown",function(e){
-      dragging=true;dx=e.clientX-win.offsetLeft;dy=e.clientY-win.offsetTop;win.setPointerCapture(e.pointerId)
-    });
-    hdr.addEventListener("pointermove",function(e){
-      if(!dragging)return;
-      var x=e.clientX-dx,y=e.clientY-dy;
-      win.style.left=x+"px";win.style.top=y+"px";win.style.transform="translate(0,0) rotateX(8deg) rotateY(-6deg) translateZ(80px)"
-    });
-    hdr.addEventListener("pointerup",function(e){dragging=false;win.releasePointerCapture(e.pointerId)});
-    win.addEventListener("pointerdown",function(){bringToFront(win)});
-    win.querySelector('[data-act="close"]').addEventListener("click",function(){win.remove()});
-    win.querySelector('[data-act="go"]').addEventListener("click",function(){navigateTo(urlbar.value.trim(),iframe,urlbar,true)});
-    win.querySelector('[data-act="pop"]').addEventListener("click",function(){var u=normalizeUrl(urlbar.value.trim()); if(u) window.open(u,"_blank")});
-    win.querySelector('[data-act="back"]').addEventListener("click",function(){try{iframe.contentWindow.history.back()}catch(e){}});
-    win.querySelector('[data-act="fwd"]').addEventListener("click",function(){try{iframe.contentWindow.history.forward()}catch(e){}});
-    win.querySelector('[data-act="yt"]').addEventListener("click",function(){
-      try{
-        if(iframe.src.indexOf("youtube.com/embed/")>-1){
-          var cmd={event:"command",func:"playVideo"};
-          if(win.dataset.playing==="1"){cmd.func="pauseVideo";win.dataset.playing="0"}else{win.dataset.playing="1"}
-          iframe.contentWindow.postMessage(JSON.stringify(cmd),"*");
-        }
-      }catch(e){}
-    });
-    return win;
-  }
-
-  function bringToFront(win){
-    var max=0; $$(".win").forEach(function(w){max=Math.max(max,parseInt(w.style.zIndex||"0",10))});
-    win.style.zIndex=String(max+1);
-  }
-
-  function normalizeUrl(u){
-    if(!u) return "";
-    if(/^https?:\/\//i.test(u)) return u;
-    if(/^[\w-]+\.[\w.-]+/.test(u)) return "https://"+u;
-    return "https://www.google.com/search?q="+encodeURIComponent(u);
-  }
-
-  function toYouTubeEmbed(u){
-    var m1=u.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/);
-    if(m1) return "https://www.youtube.com/embed/"+m1[1]+"?rel=0&playsinline=1&enablejsapi=1";
-    var m2=u.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
-    if(m2) return "https://www.youtube.com/embed/"+m2[1]+"?rel=0&playsinline=1&enablejsapi=1";
-    var m3=u.match(/embed\/([a-zA-Z0-9_-]{6,})/);
-    if(m3) return "https://www.youtube.com/embed/"+m3[1]+"?rel=0&playsinline=1&enablejsapi=1";
-    return "";
-  }
-
-  function navigateTo(raw,iframe,urlbar,allowEmbed){
-    var u=normalizeUrl(raw);
-    if(allowEmbed){
-      var yt=toYouTubeEmbed(u);
-      if(yt){iframe.src=yt; urlbar.value=u; return}
+  requestAnimationFrame(pollGamepads);
+  function emulateClick(type){
+    const el = document.elementFromPoint(gpState.x, gpState.y);
+    if(!el) return;
+    const iframe = el.closest('iframe');
+    if(iframe){
+      try{ iframe.focus(); }catch(e){}
+      const rect = iframe.getBoundingClientRect();
+      const evt = new MouseEvent(type==='left'?'click':'contextmenu', {clientX: rect.left + rect.width/2, clientY: rect.top + rect.height/2, bubbles:true, cancelable:true});
+      iframe.dispatchEvent(evt);
+      return;
     }
-    if(/discord\.com\/app/.test(u)){window.open(u,"_blank"); return}
-    iframe.src=u; urlbar.value=u;
+    const target = el;
+    const eventType = type==='left' ? 'click' : 'contextmenu';
+    const evt = new MouseEvent(eventType, {clientX: gpState.x, clientY: gpState.y, bubbles:true, cancelable:true});
+    target.dispatchEvent(evt);
   }
-
-  btnAdd.addEventListener("click",function(){
-    var w=createBrowserWindow({url:"https://www.google.com"});
-    centerWindow(w);
+  window.addEventListener('beforeunload', saveState);
+  document.getElementById('wndAlpha').addEventListener('input', (e)=>{
+    const v = e.target.value/100;
+    cssObjects.forEach(x=>{ x.el.style.background = `rgba(18,18,24,${v})`; x.obj.userData.alpha = v; });
+    saveState();
   });
-
-  openYTWin.addEventListener("click",function(){
-    var w=createBrowserWindow({url:"https://www.youtube.com"});
-    centerWindow(w);
+  document.getElementById('shadowToggle').addEventListener('change', (e)=>{
+    const on = e.target.checked;
+    cssObjects.forEach(x=>{ x.el.style.boxShadow = on ? '0 14px 40px rgba(0,0,0,0.6)' : 'none';});
   });
-
-  function centerWindow(win){
-    var x=(window.innerWidth - win.offsetWidth)/2;
-    var y=(window.innerHeight - win.offsetHeight)/2;
-    win.style.left=x+"px"; win.style.top=y+"px"; win.style.transform="translate(0,0) rotateX(8deg) rotateY(-6deg) translateZ(80px)";
+  function handLoop(){
+    if(window.hand && window.hand.enabled){
+    }
+    requestAnimationFrame(handLoop);
   }
-
-  btnYouTubePWA.addEventListener("click",function(){
-    window.open("https://m.youtube.com","_blank")
+  handLoop();
+  setTimeout(()=>{ gsap.to('#hint', {opacity:0.0, duration:1.2, delay:6}); }, 1000);
+  document.addEventListener('pointerdown', (e)=>{
+    const sp = document.getElementById('settingsPanel');
+    if(sp.style.display==='block'){
+      if(!sp.contains(e.target) && !document.getElementById('gearBtn').contains(e.target)){
+        sp.style.display='none';
+      }
+    }
   });
-  btnDiscordPWA.addEventListener("click",function(){
-    window.open("https://discord.com/app","_blank")
-  });
+  setInterval(saveState, 3000);
 })();
 </script>
 </body>
