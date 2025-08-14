@@ -8,23 +8,22 @@
 :root{ --clock-color: #66f8ff; --ui-bg: rgba(0,0,0,0.45); --ui-accent: #29a3ff; }
 html,body{height:100%;margin:0;background:#000;overflow:hidden;-webkit-user-select:none;user-select:none}
 body.landscape{ transform-origin:center center; transform: rotate(90deg) translateY(-100vh); width:100vh; height:100vw; overflow:hidden; position:fixed; left:0; top:0}
-#cameraVideo{position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:0; transform: none; -webkit-transform: none; background:#000}
-#clock{position:fixed; right:14px; bottom:14px; z-index:2000; color:var(--clock-color); font-weight:700; font-family:system-ui, -apple-system, "Helvetica Neue", "Segoe UI"; font-size:18px; text-shadow:0 2px 6px rgba(0,0,0,0.6)}
-#hudButtons{position:fixed; left:14px; top:14px; z-index:2000; display:flex; gap:8px; align-items:center}
-.btn{background:var(--ui-bg); color:#fff; border-radius:10px; padding:8px; min-width:40px; text-align:center; font-weight:600; box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+#cameraVideo{position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:0; transform:none}
+#clock{position:fixed; right:14px; bottom:14px; z-index:4000; color:var(--clock-color); font-weight:700; font-family:system-ui, -apple-system, "Helvetica Neue", "Segoe UI"; font-size:18px; text-shadow:0 2px 6px rgba(0,0,0,0.6)}
+#hudButtons{position:fixed; left:14px; top:14px; z-index:4000; display:flex; gap:8px; align-items:center; pointer-events:auto}
+.btn{background:var(--ui-bg); color:#fff; border-radius:10px; padding:8px; min-width:40px; text-align:center; font-weight:600; box-shadow:0 6px 18px rgba(0,0,0,0.6); pointer-events:auto}
 .iconBtn{width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:10px; font-size:18px}
-#settingsPanel{position:fixed; left:14px; top:64px; z-index:2000; background:rgba(6,6,6,0.6); color:#fff; padding:10px; border-radius:10px; width:220px; display:none; font-family:system-ui}
+#settingsPanel{position:fixed; left:14px; top:64px; z-index:4000; background:rgba(6,6,6,0.6); color:#fff; padding:10px; border-radius:10px; width:220px; display:none; font-family:system-ui; pointer-events:auto}
 #settingsPanel label{display:flex; justify-content:space-between; margin:6px 0; align-items:center}
 #settingsPanel input[type=range]{width:100%}
-#gpCursor{position:fixed; width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.95); transform:translate(-50%,-50%); z-index:1500; pointer-events:none; box-shadow:0 6px 18px rgba(0,0,0,0.5)}
+#gpCursor{position:fixed; width:22px; height:22px; border-radius:50%; background:rgba(255,255,255,0.95); transform:translate(-50%,-50%); z-index:3000; pointer-events:none; box-shadow:0 6px 18px rgba(0,0,0,0.5)}
 #threeContainer{position:fixed; inset:0; z-index:100; pointer-events:none}
 .app-window{width:360px; height:220px; border-radius:10px; overflow:hidden; background:rgba(18,18,24,0.88); box-shadow:0 14px 40px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.04); transform-style:preserve-3d; cursor:grab; pointer-events:auto}
 .titlebar{height:34px; display:flex; align-items:center; padding:0 10px; gap:8px; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2)); color:#fff; font-weight:700; font-size:14px}
 .title-actions{margin-left:auto; display:flex; gap:6px}
 .tbtn{width:30px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff; border:1px solid rgba(255,255,255,0.03); cursor:pointer}
 .app-iframe{width:100%; height:calc(100% - 34px); border:none; background:#fff}
-#addBtn{position:fixed; left:14px; bottom:14px; z-index:2000}
-#hint{position:fixed; top:14px; right:14px; color:#ddd; z-index:2000; font-size:13px}
+#addBtn{position:fixed; left:14px; bottom:14px; z-index:4000}
 @media (max-width:600px){ .app-window{width:300px;height:200px} }
 </style>
 </head>
@@ -48,7 +47,6 @@ body.landscape{ transform-origin:center center; transform: rotate(90deg) transla
     <button id="resetBtn" class="btn" style="flex:1">初期化</button>
   </div>
 </div>
-<div id="hint">Controller: L-stick move → show cursor. A/X mapped to buttons.</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/renderers/CSS3DRenderer.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
@@ -59,10 +57,27 @@ body.landscape{ transform-origin:center center; transform: rotate(90deg) transla
   function applyLandscapeClass(){ if(window.innerHeight > window.innerWidth){ document.body.classList.add('landscape') } else { document.body.classList.remove('landscape') } }
   applyLandscapeClass(); window.addEventListener('resize', applyLandscapeClass);
   const video = document.getElementById('cameraVideo');
+  async function pickBackCamera(){
+    try{
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(d=>d.kind==='videoinput');
+      let back = videoDevices.find(d=> /back|rear|environment/i.test(d.label));
+      if(!back && videoDevices.length>1) back = videoDevices[videoDevices.length-1];
+      if(back){
+        const s = await navigator.mediaDevices.getUserMedia({ video:{ deviceId:{ exact: back.deviceId } }, audio:false });
+        return s;
+      }
+    }catch(e){}
+    try{ const s2 = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: { ideal:'environment' } }, audio:false }); return s2 }
+    catch(e){}
+    try{ const s3 = await navigator.mediaDevices.getUserMedia({ video:true, audio:false }); return s3 }
+    catch(e){ return null }
+  }
   async function startCam(){
-    try{ const s = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: { exact:"environment" } }, audio:false }); video.srcObject = s }catch(_){
-      try{ const s = await navigator.mediaDevices.getUserMedia({ video:{ facingMode: "environment" }, audio:false }); video.srcObject = s }catch(err){ console.warn('camera failed', err) }
-    }
+    const stream = await pickBackCamera();
+    if(!stream) return;
+    try{ video.srcObject = stream; video.style.transform = 'scaleX(1)'; }
+    catch(e){}
   }
   startCam();
   const clockEl = document.getElementById('clock');
@@ -142,113 +157,35 @@ body.landscape{ transform-origin:center center; transform: rotate(90deg) transla
   }
   function saveState(){
     try{
-      const arr = cssObjects.map(x=>{
-        const u = x.obj.userData;
-        return {url:u.url || x.obj.element.querySelector('iframe').src, screenX:u.screenX, screenY:u.screenY, z:x.obj.position.z, w: parseInt(x.el.style.width||360), h: parseInt(x.el.style.height||220), title: x.el.querySelector('.titleText').textContent, alpha: u.alpha};
-      });
+      const arr = cssObjects.map(x=>{ const u = x.obj.userData; return {url:u.url || x.obj.element.querySelector('iframe').src, screenX:u.screenX, screenY:u.screenY, z:x.obj.position.z, w: parseInt(x.el.style.width||360), h: parseInt(x.el.style.height||220), title: x.el.querySelector('.titleText').textContent, alpha: u.alpha}; });
       localStorage.setItem(stateKey, JSON.stringify(arr));
-    }catch(e){console.warn('save fail', e);}
-  }
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(stateKey);
-      if(!raw) return;
-      const arr = JSON.parse(raw);
-      arr.forEach(a=> createWindow(a));
-    }catch(e){console.warn('load fail', e);}
-  }
+    }catch(e){console.warn('save fail', e);}  }
+  function loadState(){ try{ const raw = localStorage.getItem(stateKey); if(!raw) return; const arr = JSON.parse(raw); arr.forEach(a=> createWindow(a)); }catch(e){console.warn('load fail', e);} }
   document.getElementById('addWindowBtn').addEventListener('click', ()=>{ createWindow({url:'https://www.youtube.com', alpha: document.getElementById('wndAlpha').value/100});});
   document.getElementById('addBtnUI').addEventListener('click', ()=>{ createWindow({url:'https://www.youtube.com', alpha: document.getElementById('wndAlpha').value/100});});
   document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('全部リセットする？')){ localStorage.removeItem(stateKey); location.reload(); }});
-  document.getElementById('gearBtn').addEventListener('click', ()=>{ const p=document.getElementById('settingsPanel'); p.style.display = p.style.display==='block' ? 'none' : 'block'; });
+  function toggleSettings(){ const p=document.getElementById('settingsPanel'); p.style.display = p.style.display==='block' ? 'none' : 'block'; }
+  document.getElementById('gearBtn').addEventListener('pointerdown', toggleSettings);
+  document.getElementById('gearBtn').addEventListener('touchstart', toggleSettings);
   loadState();
   const raycaster = new THREE.Raycaster();
   function render(){ requestAnimationFrame(render); renderer.render(scene,camera); }
   render();
-  renderer.domElement.style.pointerEvents = 'auto';
+  renderer.domElement.style.pointerEvents = 'none';
   window.addEventListener('resize', ()=>{ cssObjects.forEach(x=> updateObjFromScreen(x.obj)); });
   const gpCursor = document.getElementById('gpCursor');
-  let cursorVisible = false;
-  let lastGp = null;
-  const gpState = {x: window.innerWidth/2, y: window.innerHeight/2, zIndexAdjust:0};
-  function pollGamepads(){
-    const gps = navigator.getGamepads ? navigator.getGamepads() : [];
-    for(const g of gps){
-      if(!g) continue;
-      lastGp = g;
-      const ax0 = g.axes[0] || 0;
-      const ax1 = g.axes[1] || 0;
-      const dz = (v)=> Math.abs(v) < 0.12 ? 0 : v;
-      const mvX = dz(ax0) * 14;
-      const mvY = dz(ax1) * 14;
-      if(mvX!==0 || mvY!==0){
-        gpState.x = Math.max(0, Math.min(window.innerWidth, gpState.x + mvX));
-        gpState.y = Math.max(0, Math.min(window.innerHeight, gpState.y + mvY));
-        if(!cursorVisible){ cursorVisible=true; gpCursor.style.display='block'; gpCursor.style.opacity='1'; }
-        gpCursor.style.left = gpState.x + 'px';
-        gpCursor.style.top = gpState.y + 'px';
-        const hits = cssObjects.map(x=>{
-          const el = x.el;
-          const rect = el.getBoundingClientRect();
-          return {obj:x.obj, rect, dist: Math.hypot(gpState.x - (rect.left+rect.width/2), gpState.y - (rect.top+rect.height/2))};
-        }).sort((a,b)=>a.dist-b.dist);
-        if(hits.length>0 && hits[0].dist < 260){
-          const target = hits[0].obj;
-          cssObjects.forEach(x=>{ if(x.obj===target) gsap.to(x.obj.position,{z:-80, duration:0.2}); else gsap.to(x.obj.position,{z: -300, duration:0.4});});
-        }
-      }
-      const aBtn = g.buttons[0] && g.buttons[0].pressed;
-      const xBtn = g.buttons[2] && g.buttons[2].pressed;
-      const plusBtn = g.buttons[9] && g.buttons[9].pressed;
-      if(plusBtn){ if(!gpState._plusLock){ createWindow({url:'https://www.youtube.com', alpha: document.getElementById('wndAlpha').value/100}); gpState._plusLock=true; setTimeout(()=>gpState._plusLock=false,400); } }
-      if(aBtn){ if(!gpState._aLock){ emulateClick('right'); gpState._aLock=true; setTimeout(()=>gpState._aLock=false,200); } }
-      if(xBtn){ if(!gpState._xLock){ emulateClick('left'); gpState._xLock=true; setTimeout(()=>gpState._xLock=false,200); } }
-    }
+  let cursorVisible = false; let lastGp = null; const gpState = {x: window.innerWidth/2, y: window.innerHeight/2, zIndexAdjust:0};
+  function pollGamepads(){ const gps = navigator.getGamepads ? navigator.getGamepads() : []; for(const g of gps){ if(!g) continue; lastGp = g; const ax0 = g.axes[0] || 0; const ax1 = g.axes[1] || 0; const dz = (v)=> Math.abs(v) < 0.12 ? 0 : v; const mvX = dz(ax0) * 14; const mvY = dz(ax1) * 14; if(mvX!==0 || mvY!==0){ gpState.x = Math.max(0, Math.min(window.innerWidth, gpState.x + mvX)); gpState.y = Math.max(0, Math.min(window.innerHeight, gpState.y + mvY)); if(!cursorVisible){ cursorVisible=true; gpCursor.style.display='block'; gpCursor.style.opacity='1'; } gpCursor.style.left = gpState.x + 'px'; gpCursor.style.top = gpState.y + 'px'; const hits = cssObjects.map(x=>{ const el = x.el; const rect = el.getBoundingClientRect(); return {obj:x.obj, rect, dist: Math.hypot(gpState.x - (rect.left+rect.width/2), gpState.y - (rect.top+rect.height/2))}; }).sort((a,b)=>a.dist-b.dist); if(hits.length>0 && hits[0].dist < 260){ const target = hits[0].obj; cssObjects.forEach(x=>{ if(x.obj===target) gsap.to(x.obj.position,{z:-80, duration:0.2}); else gsap.to(x.obj.position,{z: -300, duration:0.4});}); } }
+      const aBtn = g.buttons[0] && g.buttons[0].pressed; const xBtn = g.buttons[2] && g.buttons[2].pressed; const plusBtn = g.buttons[9] && g.buttons[9].pressed; if(plusBtn){ if(!gpState._plusLock){ createWindow({url:'https://www.youtube.com', alpha: document.getElementById('wndAlpha').value/100}); gpState._plusLock=true; setTimeout(()=>gpState._plusLock=false,400); } } if(aBtn){ if(!gpState._aLock){ emulateClick('right'); gpState._aLock=true; setTimeout(()=>gpState._aLock=false,200); } } if(xBtn){ if(!gpState._xLock){ emulateClick('left'); gpState._xLock=true; setTimeout(()=>gpState._xLock=false,200); } } }
     requestAnimationFrame(pollGamepads);
   }
   requestAnimationFrame(pollGamepads);
-  function emulateClick(type){
-    const el = document.elementFromPoint(gpState.x, gpState.y);
-    if(!el) return;
-    const iframe = el.closest('iframe');
-    if(iframe){
-      try{ iframe.focus(); }catch(e){}
-      const rect = iframe.getBoundingClientRect();
-      const evt = new MouseEvent(type==='left'?'click':'contextmenu', {clientX: rect.left + rect.width/2, clientY: rect.top + rect.height/2, bubbles:true, cancelable:true});
-      iframe.dispatchEvent(evt);
-      return;
-    }
-    const target = el;
-    const eventType = type==='left' ? 'click' : 'contextmenu';
-    const evt = new MouseEvent(eventType, {clientX: gpState.x, clientY: gpState.y, bubbles:true, cancelable:true});
-    target.dispatchEvent(evt);
-  }
+  function emulateClick(type){ const el = document.elementFromPoint(gpState.x, gpState.y); if(!el) return; const iframe = el.closest('iframe'); if(iframe){ try{ iframe.focus() }catch(e){} const rect = iframe.getBoundingClientRect(); const evt = new MouseEvent(type==='left'?'click':'contextmenu', {clientX: rect.left + rect.width/2, clientY: rect.top + rect.height/2, bubbles:true, cancelable:true}); iframe.dispatchEvent(evt); return } const target = el; const eventType = type==='left' ? 'click' : 'contextmenu'; const evt = new MouseEvent(eventType, {clientX: gpState.x, clientY: gpState.y, bubbles:true, cancelable:true}); target.dispatchEvent(evt); }
   window.addEventListener('beforeunload', saveState);
-  document.getElementById('wndAlpha').addEventListener('input', (e)=>{
-    const v = e.target.value/100;
-    cssObjects.forEach(x=>{ x.el.style.background = `rgba(18,18,24,${v})`; x.obj.userData.alpha = v; });
-    saveState();
-  });
-  document.getElementById('shadowToggle').addEventListener('change', (e)=>{
-    const on = e.target.checked;
-    cssObjects.forEach(x=>{ x.el.style.boxShadow = on ? '0 14px 40px rgba(0,0,0,0.6)' : 'none';});
-  });
-  function handLoop(){
-    if(window.hand && window.hand.enabled){
-    }
-    requestAnimationFrame(handLoop);
-  }
+  document.getElementById('wndAlpha').addEventListener('input', (e)=>{ const v = e.target.value/100; cssObjects.forEach(x=>{ x.el.style.background = `rgba(18,18,24,${v})`; x.obj.userData.alpha = v; }); saveState(); });
+  document.getElementById('shadowToggle').addEventListener('change', (e)=>{ const on = e.target.checked; cssObjects.forEach(x=>{ x.el.style.boxShadow = on ? '0 14px 40px rgba(0,0,0,0.6)' : 'none';}); });
+  function handLoop(){ if(window.hand && window.hand.enabled){ } requestAnimationFrame(handLoop); }
   handLoop();
-  setTimeout(()=>{ gsap.to('#hint', {opacity:0.0, duration:1.2, delay:6}); }, 1000);
-  document.addEventListener('pointerdown', (e)=>{
-    const sp = document.getElementById('settingsPanel');
-    if(sp.style.display==='block'){
-      if(!sp.contains(e.target) && !document.getElementById('gearBtn').contains(e.target)){
-        sp.style.display='none';
-      }
-    }
-  });
-  setInterval(saveState, 3000);
 })();
 </script>
 </body>
