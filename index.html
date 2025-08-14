@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>MetaQuest風スマホVR</title>
 <style>
-html,body{margin:0;padding:0;overflow:hidden;background:#000}
+html,body{margin:0;padding:0;overflow:hidden;background:#000;touch-action:none}
 #cameraVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1}
-#clock{position:absolute;bottom:10px;right:10px;font-size:20px;font-family:sans-serif;display:none}
+#clock{position:absolute;bottom:10px;right:10px;font-size:20px;font-family:sans-serif;color:#0ff}
 #uiButtons{position:absolute;top:10px;left:10px;z-index:10;display:flex;gap:10px}
 .uiBtn{width:40px;height:40px;background:rgba(0,0,0,0.5);color:#0ff;font-size:24px;border:none;border-radius:8px;cursor:pointer}
 #settingsPanel{position:absolute;top:60px;left:10px;width:180px;background:rgba(0,0,0,0.7);color:#0ff;padding:10px;font-family:sans-serif;display:flex;flex-direction:column;gap:5px;z-index:10;display:none;border-radius:8px}
@@ -24,10 +24,10 @@ iframe{width:100%;height:100%}
 <button id="settingsBtn" class="uiBtn">⚙</button>
 </div>
 <div id="settingsPanel">
-<label>時計 <input type="checkbox" id="clockToggle"></label>
-<label>色 R <input type="number" id="clockR" min="0" max="255" value="0"></label>
-<label>色 G <input type="number" id="clockG" min="0" max="255" value="255"></label>
-<label>色 B <input type="number" id="clockB" min="0" max="255" value="255"></label>
+<label>時計 <input type="checkbox" id="clockToggle" checked></label>
+<label>R <input type="number" id="clockR" min="0" max="255" value="0"></label>
+<label>G <input type="number" id="clockG" min="0" max="255" value="255"></label>
+<label>B <input type="number" id="clockB" min="0" max="255" value="255"></label>
 <label>透明度 <input type="range" id="windowOpacity" min="0.1" max="1" step="0.05" value="0.7"></label>
 <label>枠色 <input type="color" id="windowBorderColor" value="#00f0ff"></label>
 </div>
@@ -45,7 +45,9 @@ renderer.domElement.style.position='absolute'
 renderer.domElement.style.top=0
 document.body.appendChild(renderer.domElement)
 let windows=[]
-function createWindow(url="https://www.youtube.com"){const div=document.createElement('div');div.className="window";div.style.opacity=document.getElementById('windowOpacity').value;div.style.borderColor=document.getElementById('windowBorderColor').value;const iframe=document.createElement('iframe');iframe.src=url;div.appendChild(iframe);const obj=new THREE.CSS3DObject(div);obj.position.set(Math.random()*400-200,Math.random()*300-150,-500);obj.rotation.set(0,0,0);scene.add(obj);windows.push(obj);HandJS.makeDraggable(obj)}
+function createWindow(url="https://www.youtube.com"){const div=document.createElement('div');div.className="window";div.style.opacity=document.getElementById('windowOpacity').value;div.style.borderColor=document.getElementById('windowBorderColor').value;const iframe=document.createElement('iframe');iframe.src=url;div.appendChild(iframe);const obj=new THREE.CSS3DObject(div);obj.position.set(Math.random()*400-200,Math.random()*300-150,-500);obj.rotation.set(0,0,0);scene.add(obj);windows.push(obj);HandJS.makeDraggable(obj);saveWindows()}
+function saveWindows(){const data=windows.map(w=>({x:w.position.x,y:w.position.y,z:w.position.z,rotX:w.rotation.x,rotY:w.rotation.y,rotZ:w.rotation.z,url:w.element.querySelector('iframe').src}));localStorage.setItem('windows',JSON.stringify(data))}
+function loadWindows(){const data=JSON.parse(localStorage.getItem('windows')||'[]');data.forEach(d=>{const div=document.createElement('div');div.className="window";div.style.opacity=document.getElementById('windowOpacity').value;div.style.borderColor=document.getElementById('windowBorderColor').value;const iframe=document.createElement('iframe');iframe.src=d.url;div.appendChild(iframe);const obj=new THREE.CSS3DObject(div);obj.position.set(d.x,d.y,d.z);obj.rotation.set(d.rotX,d.rotY,d.rotZ);scene.add(obj);windows.push(obj);HandJS.makeDraggable(obj)})}
 document.getElementById('addWindowBtn').addEventListener('click',()=>{createWindow()})
 document.getElementById('settingsBtn').addEventListener('click',()=>{const sp=document.getElementById('settingsPanel');sp.style.display=sp.style.display==='none'?'flex':'none'})
 navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false}).then(stream=>{document.getElementById('cameraVideo').srcObject=stream})
@@ -62,6 +64,7 @@ document.getElementById('windowBorderColor').addEventListener('input',(e)=>{wind
 function animate(){requestAnimationFrame(animate);renderer.render(scene,camera)}
 animate()
 window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)})
+loadWindows()
 </script>
 </body>
 </html>
