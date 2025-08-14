@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>MetaQuest風スマホVR</title>
+<title>VR</title>
 <style>
 html,body{margin:0;padding:0;overflow:hidden;background:#000;touch-action:none}
 #cameraVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1}
@@ -50,7 +50,7 @@ function saveWindows(){const data=windows.map(w=>({x:w.position.x,y:w.position.y
 function loadWindows(){const data=JSON.parse(localStorage.getItem('windows')||'[]');data.forEach(d=>{const div=document.createElement('div');div.className="window";div.style.opacity=document.getElementById('windowOpacity').value;div.style.borderColor=document.getElementById('windowBorderColor').value;const iframe=document.createElement('iframe');iframe.src=d.url;div.appendChild(iframe);const obj=new THREE.CSS3DObject(div);obj.position.set(d.x,d.y,d.z);obj.rotation.set(d.rotX,d.rotY,d.rotZ);scene.add(obj);windows.push(obj);HandJS.makeDraggable(obj)})}
 document.getElementById('addWindowBtn').addEventListener('click',()=>{createWindow()})
 document.getElementById('settingsBtn').addEventListener('click',()=>{const sp=document.getElementById('settingsPanel');sp.style.display=sp.style.display==='none'?'flex':'none'})
-navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false}).then(stream=>{document.getElementById('cameraVideo').srcObject=stream})
+navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:"environment"}},audio:false}).then(stream=>{document.getElementById('cameraVideo').srcObject=stream})
 const clockEl=document.getElementById('clock')
 function updateClock(){const now=new Date();clockEl.textContent=`${now.getHours()}時:${now.getMinutes()}分`}
 setInterval(updateClock,1000);updateClock()
