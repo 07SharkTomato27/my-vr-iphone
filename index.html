@@ -2,123 +2,106 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>VR</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MetaQuest風VR UI</title>
 <style>
-html,body{margin:0;padding:0;overflow:hidden;background:#000;touch-action:none}
-#cameraVideo{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1}
-#clock{position:absolute;bottom:10px;right:10px;font-size:20px;font-family:sans-serif;color:#0ff;z-index:20}
-#uiButtons{position:absolute;top:10px;left:10px;z-index:20;display:flex;gap:10px}
-.uiBtn{width:40px;height:40px;background:rgba(0,0,0,0.5);color:#0ff;font-size:24px;border:none;border-radius:8px;cursor:pointer}
-#settingsPanel{position:absolute;top:60px;left:10px;width:180px;background:rgba(0,0,0,0.7);color:#0ff;padding:10px;font-family:sans-serif;display:flex;flex-direction:column;gap:5px;z-index:20;display:none;border-radius:8px}
-#settingsPanel label{display:flex;justify-content:space-between;align-items:center}
-.window{width:300px;height:200px;background:rgba(0,0,0,0.7);border:2px solid #0ff;cursor:grab;overflow:hidden;border-radius:5px}
-iframe{width:100%;height:100%;border:none}
+html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
+#camWrap{position:fixed;inset:0;overflow:hidden;background:#000}
+#cam{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(90deg);width:100vh;height:100vw;object-fit:cover;backface-visibility:hidden;z-index:-1}
+.leftCam #cam{transform:translate(-50%,-50%) rotate(-90deg)}
+#clock{position:fixed;right:.9rem;bottom:.7rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;font-size:22px;padding:.4rem .7rem;border-radius:14px;border:1px solid rgba(120,200,255,.25);background:rgba(0,12,20,.35);text-shadow:0 0 10px #0ff;color:#0ff}
+#settings{position:fixed;inset:0;display:none;align-items:center;justify-content:center;pointer-events:auto}
+#settings .panel{width:min(92vw,520px);background:rgba(20,24,28,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:16px;color:#fff}
+.row{display:flex;align-items:center;justify-content:space-between;padding:10px 6px;gap:12px}
+.toggle{inline-size:52px;block-size:30px;border-radius:999px;background:#333;position:relative;cursor:pointer;border:1px solid rgba(255,255,255,.14)}
+.knob{position:absolute;top:3px;left:3px;inline-size:24px;block-size:24px;border-radius:50%;background:#fff;transition:transform .15s}
+.toggle.on{background:#69d2ff}.toggle.on .knob{transform:translateX(22px)}
+.btn{background:rgba(20,24,28,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);color:#fff;border-radius:14px;padding:.5rem .8rem;font-size:14px;cursor:pointer}
+#ui{position:fixed;inset:0;pointer-events:none}
+.bar{position:fixed;top:0;left:0;right:0;display:flex;gap:.5rem;padding:.6rem .8rem;justify-content:space-between;pointer-events:auto}
+.leftGroup{display:flex;gap:.5rem}
+#space{position:fixed;inset:0;perspective:1200px}
+.win{position:absolute;left:50%;top:50%;transform-style:preserve-3d;width:min(92vw,980px);height:min(62vh,560px);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.14);display:none;pointer-events:auto;background:#000;transition:transform .2s}
+.winHdr{position:absolute;left:0;right:0;top:0;height:46px;display:flex;align-items:center;gap:8px;padding:0 10px;background:rgba(20,24,28,.55);backdrop-filter:blur(12px);color:#fff;cursor:grab}
+.winHdr:active{cursor:grabbing}
+.winTitle{font-weight:700;margin-right:6px}
+.winBody{position:absolute;left:0;right:0;top:46px;bottom:0;background:#000;display:flex;align-items:center;justify-content:center}
+.iconBtn,.navBtn{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;border-radius:10px;padding:.35rem .6rem;cursor:pointer;white-space:nowrap}
+.urlbar{flex:1;min-width:120px;background:#0b0b0b;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:.4rem .55rem}
+.win iframe{border:0;width:100%;height:100%;background:#111}
+#fileInput{display:none}
 </style>
 </head>
 <body>
-<video id="cameraVideo" autoplay muted playsinline></video>
-<div id="clock"></div>
-<div id="uiButtons">
-<button id="addWindowBtn" class="uiBtn">+</button>
-<button id="settingsBtn" class="uiBtn">⚙</button>
+<div id="camWrap"><video id="cam" playsinline autoplay muted></video></div>
+<div id="ui">
+<div class="bar">
+<div class="leftGroup">
+<button class="btn" id="btnAdd">＋</button>
+<button class="btn" id="btnYouTubePWA">YouTube</button>
+<button class="btn" id="btnDiscordPWA">Discord</button>
 </div>
-<div id="settingsPanel">
-<label>時計 <input type="checkbox" id="clockToggle" checked></label>
-<label>R <input type="number" id="clockR" min="0" max="255" value="0"></label>
-<label>G <input type="number" id="clockG" min="0" max="255" value="255"></label>
-<label>B <input type="number" id="clockB" min="0" max="255" value="255"></label>
-<label>透明度 <input type="range" id="windowOpacity" min="0.1" max="1" step="0.05" value="0.7"></label>
-<label>枠色 <input type="color" id="windowBorderColor" value="#00f0ff"></label>
+<div>
+<button class="btn" id="btnSettings">⚙️</button>
 </div>
+</div>
+<div id="clock">--:--</div>
+</div>
+<div id="settings">
+<div class="panel">
+<h3 style="margin:4px 6px 10px">設定</h3>
+<div class="row">
+<div>時計表示</div>
+<div class="toggle" id="tgClock"><div class="knob"></div></div>
+</div>
+<div class="row">
+<div>時計色</div>
+<input type="color" id="clockColor" value="#00ffff">
+</div>
+<div class="row">
+<div>ウィンドウ画像</div>
+<button class="btn" id="uploadImg">アップロード</button>
+<input type="file" id="fileInput" accept="image/*">
+</div>
+<div class="row" style="justify-content:flex-end"><button class="btn" id="closeSettings">閉じる</button></div>
+</div>
+</div>
+<div id="space"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/renderers/CSS3DRenderer.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.14.0/gsap.min.js"></script>
-<script src="js/hand.js"></script>
 <script>
-async function startCamera(){
-const video=document.getElementById('cameraVideo')
-try{
-const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{exact:"environment"}},audio:false})
-video.srcObject=stream
-await video.play()
-}catch(e){console.error("カメラ取得失敗",e)}}
-startCamera()
-
-const scene=new THREE.Scene()
-const camera3D=new THREE.PerspectiveCamera(70,window.innerWidth/window.innerHeight,0.1,5000)
-camera3D.position.z=600
-const renderer=new THREE.CSS3DRenderer()
-renderer.setSize(window.innerWidth,window.innerHeight)
-renderer.domElement.style.position='absolute'
-renderer.domElement.style.top=0
-document.body.appendChild(renderer.domElement)
-
-let windows=[]
-function createWindow(url="https://www.youtube.com"){
-const div=document.createElement('div')
-div.className="window"
-div.style.opacity=document.getElementById('windowOpacity').value
-div.style.borderColor=document.getElementById('windowBorderColor').value
-const iframe=document.createElement('iframe')
-iframe.src=url
-div.appendChild(iframe)
-const obj=new THREE.CSS3DObject(div)
-obj.position.set(Math.random()*400-200,Math.random()*300-150,-500)
-scene.add(obj)
-windows.push(obj)
-HandJS.makeDraggable(obj)
-saveWindows()
+const cam=document.getElementById("cam"),clockEl=document.getElementById("clock"),fileInput=document.getElementById("fileInput")
+async function startCam(){try{var stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});cam.srcObject=stream;await cam.play()}catch(e){alert("カメラ取得失敗 "+e)}}
+startCam()
+function fmtClock(d){let h=d.getHours(),m=d.getMinutes();return (h<10?"0"+h:h)+":"+(m<10?"0"+m:m)}
+function tick(){clockEl.textContent=fmtClock(new Date())}
+setInterval(tick,1000);tick()
+var tgClock=document.getElementById("tgClock"),settings=document.getElementById("settings"),btnSettings=document.getElementById("btnSettings"),btnCloseSettings=document.getElementById("closeSettings"),clockColorInput=document.getElementById("clockColor")
+function applyClockVisible(v){clockEl.style.display=v?"block":"none";tgClock.classList.toggle("on",v);localStorage.setItem("clockEnabled",v?"1":"0")}
+applyClockVisible(localStorage.getItem("clockEnabled")!=="0")
+tgClock.addEventListener("click",()=>applyClockVisible(!tgClock.classList.contains("on")))
+btnSettings.addEventListener("click",()=>settings.style.display="flex")
+btnCloseSettings.addEventListener("click",()=>settings.style.display="none")
+clockColorInput.addEventListener("input",()=>{clockEl.style.color=clockColorInput.value})
+const space=document.getElementById("space")
+function createBrowserWindow(url="https://www.google.com",imgSrc=null){
+var win=document.createElement("div");win.className="win";space.appendChild(win);win.style.display="block"
+var bodyContent=imgSrc?'<img src="'+imgSrc+'" style="width:100%;height:100%;object-fit:cover">':'<iframe src="'+url+'"></iframe>'
+win.innerHTML='<div class="winHdr"><span class="winTitle">Browser</span><button class="navBtn" data-act="close">×</button></div><div class="winBody">'+bodyContent+'</div>'
+var hdr=win.querySelector(".winHdr")
+var dragging=false,dx=0,dy=0
+hdr.addEventListener("pointerdown",e=>{dragging=true;dx=e.clientX-win.offsetLeft;dy=e.clientY-win.offsetTop;win.setPointerCapture(e.pointerId)})
+hdr.addEventListener("pointermove",e=>{if(!dragging)return;win.style.left=(e.clientX-dx)+"px";win.style.top=(e.clientY-dy)+"px";win.style.transform="translate(0,0) rotateX(15deg) rotateY(-15deg) translateZ(80px)"})
+hdr.addEventListener("pointerup",e=>{dragging=false;win.releasePointerCapture(e.pointerId)})
+win.querySelector('[data-act="close"]').addEventListener("click",()=>win.remove())
+apply3D(win)
+return win
 }
-
-function saveWindows(){
-const data=windows.map(w=>({x:w.position.x,y:w.position.y,z:w.position.z,rotX:w.rotation.x,rotY:w.rotation.y,rotZ:w.rotation.z,url:w.element.querySelector('iframe').src}))
-localStorage.setItem('windows',JSON.stringify(data))
-}
-
-function loadWindows(){
-const data=JSON.parse(localStorage.getItem('windows')||'[]')
-data.forEach(d=>{
-const div=document.createElement('div')
-div.className="window"
-div.style.opacity=document.getElementById('windowOpacity').value
-div.style.borderColor=document.getElementById('windowBorderColor').value
-const iframe=document.createElement('iframe')
-iframe.src=d.url
-div.appendChild(iframe)
-const obj=new THREE.CSS3DObject(div)
-obj.position.set(d.x,d.y,d.z)
-obj.rotation.set(d.rotX,d.rotY,d.rotZ)
-scene.add(obj)
-windows.push(obj)
-HandJS.makeDraggable(obj)
-})
-}
-
-document.getElementById('addWindowBtn').addEventListener('click',()=>{createWindow()})
-document.getElementById('settingsBtn').addEventListener('click',()=>{
-const sp=document.getElementById('settingsPanel')
-sp.style.display=sp.style.display==='none'?'flex':'none'
-})
-
-const clockEl=document.getElementById('clock')
-function updateClock(){const now=new Date();clockEl.textContent=`${now.getHours()}時:${now.getMinutes()}分`}
-setInterval(updateClock,1000)
-updateClock()
-
-document.getElementById('clockToggle').addEventListener('change',(e)=>{clockEl.style.display=e.target.checked?'block':'none'})
-function updateClockColor(){const r=document.getElementById('clockR').value;const g=document.getElementById('clockG').value;const b=document.getElementById('clockB').value;clockEl.style.color=`rgb(${r},${g},${b})`}
-document.getElementById('clockR').addEventListener('input',updateClockColor)
-document.getElementById('clockG').addEventListener('input',updateClockColor)
-document.getElementById('clockB').addEventListener('input',updateClockColor)
-
-document.getElementById('windowOpacity').addEventListener('input',(e)=>{windows.forEach(w=>w.element.style.opacity=e.target.value)})
-document.getElementById('windowBorderColor').addEventListener('input',(e)=>{windows.forEach(w=>w.element.style.borderColor=e.target.value)})
-
-function animate(){requestAnimationFrame(animate);renderer.render(scene,camera3D)}
-animate()
-window.addEventListener('resize',()=>{camera3D.aspect=window.innerWidth/window.innerHeight;camera3D.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)})
-loadWindows()
+function apply3D(win){win.style.transform="translate(-50%,-50%) rotateX(15deg) rotateY(-15deg) translateZ(80px)";win.addEventListener("pointerenter",()=>win.style.transform="translate(-50%,-50%) rotateX(0deg) rotateY(0deg) translateZ(120px)");win.addEventListener("pointerleave",()=>win.style.transform="translate(-50%,-50%) rotateX(15deg) rotateY(-15deg) translateZ(80px)")}
+document.getElementById("btnAdd").addEventListener("click",()=>createBrowserWindow())
+document.getElementById("btnYouTubePWA").addEventListener("click",()=>window.open("https://m.youtube.com","_blank"))
+document.getElementById("btnDiscordPWA").addEventListener("click",()=>window.open("https://discord.com/app","_blank"))
+document.getElementById("uploadImg").addEventListener("click",()=>fileInput.click())
+fileInput.addEventListener("change",e=>{if(e.target.files[0]){let url=URL.createObjectURL(e.target.files[0]);createBrowserWindow(null,url)}})
 </script>
 </body>
 </html>
